@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 public struct GeometryReader<Content: View>: View, PrimitiveView {
     let content: (Size) -> Content
 
@@ -13,17 +14,22 @@ public struct GeometryReader<Content: View>: View, PrimitiveView {
 
     func buildNode(_ node: Node) {
         setupStateProperties(node: node)
-        node.addNode(at: 0, Node(view: VStack(content: content(geometry))))
-        node.control = GeometryReaderControl(geometry: _geometry)
-        node.control!.addSubview(node.children[0].control(at: 0), at: 0)
+        observe(node: node) {
+            node.addNode(at: 0, Node(view: VStack(content: content(geometry))))
+            node.control = GeometryReaderControl(geometry: _geometry)
+            node.control!.addSubview(node.children[0].control(at: 0), at: 0)
+        }
     }
 
     func updateNode(_ node: Node) {
         setupStateProperties(node: node)
         node.view = self
-        node.children[0].update(using: VStack(content: content(geometry)))
+        observe(node: node) {
+            node.children[0].update(using: VStack(content: content(geometry)))
+        }
     }
 
+    @MainActor
     private class GeometryReaderControl: Control {
         let geometry: State<Size>
 

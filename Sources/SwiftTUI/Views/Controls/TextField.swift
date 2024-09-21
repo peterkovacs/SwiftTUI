@@ -14,14 +14,18 @@ public struct TextField: View, PrimitiveView {
     static var size: Int? { 1 }
 
     func buildNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
-        node.control = TextFieldControl(placeholder: placeholder ?? "", placeholderColor: placeholderColor, action: action)
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
+            node.control = TextFieldControl(placeholder: placeholder ?? "", placeholderColor: placeholderColor, action: action)
+        }
     }
 
     func updateNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
-        node.view = self
-        (node.control as! TextFieldControl).action = action
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
+            node.view = self
+            (node.control as! TextFieldControl).action = action
+        }
     }
 
     private class TextFieldControl: Control {

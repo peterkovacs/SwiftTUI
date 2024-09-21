@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 @propertyWrapper
 public struct State<T>: AnyState {
     public let initialValue: T
@@ -51,10 +52,12 @@ public struct State<T>: AnyState {
     }
 }
 
+@MainActor
 protocol AnyState {
     var valueReference: StateReference { get }
 }
 
+@MainActor
 class StateReference {
     weak var node: Node?
     var label: String?

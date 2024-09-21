@@ -99,22 +99,26 @@ public struct Divider: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
 
-        node.control = DividerControl(
-          orientation: stackOrientation,
-          color: foregroundColor,
-          style: style
-        )
+            node.control = DividerControl(
+                orientation: stackOrientation,
+                color: foregroundColor,
+                style: style
+            )
+        }
     }
     
     func updateNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
-        node.view = self
-
-        let control = node.control as! DividerControl
-        control.orientation = stackOrientation
-        control.color = foregroundColor
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
+            node.view = self
+            
+            let control = node.control as! DividerControl
+            control.orientation = stackOrientation
+            control.color = foregroundColor
+        }
     }
     
     private class DividerControl: Control {

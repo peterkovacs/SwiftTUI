@@ -8,12 +8,13 @@ import Foundation
 /// tail -f /tmp/swift_tui_log
 /// ```
 public func log(_ item: Any, terminator: String = "\n") {
-    print(item, terminator: terminator, to: &logStream)
+    print(item, terminator: terminator, to: &LogStream.logStream)
 }
 
-var logStream = LogStream()
 
 struct LogStream: TextOutputStream {
+    static var logStream = LogStream()
+
     func write(_ string: String) {
         let logURL = URL(fileURLWithPath: "/tmp/swift_tui_log")
         guard let data = string.data(using: .utf8) else {

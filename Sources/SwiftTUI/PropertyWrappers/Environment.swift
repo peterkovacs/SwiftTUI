@@ -1,10 +1,12 @@
 import Foundation
 
+@MainActor
 public protocol EnvironmentKey {
     associatedtype Value
     static var defaultValue: Value { get }
 }
 
+@MainActor
 public struct EnvironmentValues {
     var values: [ObjectIdentifier: Any] = [:]
     public subscript<K: EnvironmentKey>(key: K.Type) -> K.Value {
@@ -13,6 +15,7 @@ public struct EnvironmentValues {
     }
 }
 
+@MainActor
 @propertyWrapper
 public struct Environment<T>: AnyEnvironment {
     let keyPath: KeyPath<EnvironmentValues, T>
@@ -49,10 +52,12 @@ public struct Environment<T>: AnyEnvironment {
     }
 }
 
+@MainActor
 protocol AnyEnvironment {
     var valueReference: EnvironmentReference { get }
 }
 
+@MainActor
 class EnvironmentReference {
     weak var node: Node?
 }

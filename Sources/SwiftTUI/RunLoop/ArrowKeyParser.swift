@@ -13,37 +13,27 @@ struct ArrowKeyParser {
     var arrowKey: ArrowKey?
 
     mutating func parse(character: Character) -> Bool {
-        if partial == 0 && character == "\u{1b}" {
+        switch (partial, character) {
+        case (0, "\u{1b}"):
             partial = 1
             return true
-        }
-        if partial == 1 && character == "[" {
+        case (1, "["):
             partial = 2
             return true
-        }
-        if partial == 2 && character == "A" {
+        case (2, "A"):
             arrowKey = .up
-            partial = 0
-            return true
-        }
-        if partial == 2 && character == "B" {
+        case (2, "B"):
             arrowKey = .down
-            partial = 0
-            return true
-        }
-        if partial == 2 && character == "C" {
+        case (2, "C"):
             arrowKey = .right
-            partial = 0
-            return true
-        }
-        if partial == 2 && character == "D" {
+        case (2, "D"):
             arrowKey = .left
-            partial = 0
-            return true
+        default:
+            arrowKey = nil
         }
-        arrowKey = nil
+
         partial = 0
-        return false
+        return arrowKey != nil
     }
 
 }

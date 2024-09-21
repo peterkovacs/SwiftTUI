@@ -1,6 +1,6 @@
 import Foundation
 
-class WeakSet<Value> where Value: AnyObject {
+@MainActor class WeakSet<Value> where Value: AnyObject {
     private var data: [Int: Weak<Value>] = [:]
 
     func add(_ value: Value) {

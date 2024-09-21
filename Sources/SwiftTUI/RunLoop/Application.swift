@@ -3,6 +3,7 @@ import Foundation
 import AppKit
 #endif
 
+@MainActor
 public class Application {
     private let node: Node
     private let window: Window
@@ -40,6 +41,8 @@ public class Application {
     var stdInSource: DispatchSourceRead?
 
     public enum RunLoopType {
+        case async
+
         /// The default option, using Dispatch for the main run loop.
         case dispatch
 
@@ -58,20 +61,35 @@ public class Application {
         renderer.draw()
 
         let stdInSource = DispatchSource.makeReadSource(fileDescriptor: STDIN_FILENO, queue: .main)
-        stdInSource.setEventHandler(qos: .default, flags: [], handler: self.handleInput)
-        stdInSource.resume()
+        stdInSource.setEventHandler(
+            qos: .default,
+            flags: [],
+            handler: self.handleInput
+        )
+        stdInSource.activate()
         self.stdInSource = stdInSource
 
         let sigWinChSource = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: .main)
-        sigWinChSource.setEventHandler(qos: .default, flags: [], handler: self.handleWindowSizeChange)
-        sigWinChSource.resume()
+        sigWinChSource.setEventHandler(
+            qos: .default,
+            flags: [],
+            handler: self.handleWindowSizeChange
+        )
+        sigWinChSource.activate()
 
         signal(SIGINT, SIG_IGN)
         let sigIntSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-        sigIntSource.setEventHandler(qos: .default, flags: [], handler: self.stop)
-        sigIntSource.resume()
+        sigIntSource.setEventHandler(
+            qos: .default,
+            flags: [],
+            handler: self.stop
+        )
+        sigIntSource.activate()
+
 
         switch runLoopType {
+        case .async:
+            break
         case .dispatch:
             dispatchMain()
         #if os(macOS)
@@ -82,11 +100,25 @@ public class Application {
         }
     }
 
+    public func startAsync() async throws {
+        start()
+
+        while !Task.isCancelled {
+            try await Task.sleep(for: .seconds(1))
+        }
+    }
+
     private func setInputMode() {
         var tattr = termios()
         tcgetattr(STDIN_FILENO, &tattr)
         tattr.c_lflag &= ~tcflag_t(ECHO | ICANON)
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
+    }
+
+    private func becomeResponder(_ control: Control) {
+        window.firstResponder?.resignFirstResponder()
+        window.firstResponder = control
+        window.firstResponder?.becomeFirstResponder()
     }
 
     private func handleInput() {
@@ -97,38 +129,33 @@ public class Application {
         }
 
         for char in string {
+            // Replace this with a better Focus system.
             if arrowKeyParser.parse(character: char) {
                 guard let key = arrowKeyParser.arrowKey else { continue }
                 arrowKeyParser.arrowKey = nil
                 if key == .down {
                     if let next = window.firstResponder?.selectableElement(below: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
+                        becomeResponder(next)
                     }
                 } else if key == .up {
                     if let next = window.firstResponder?.selectableElement(above: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
+                        becomeResponder(next)
                     }
                 } else if key == .right {
                     if let next = window.firstResponder?.selectableElement(rightOf: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
+                        becomeResponder(next)
                     }
                 } else if key == .left {
                     if let next = window.firstResponder?.selectableElement(leftOf: 0) {
-                        window.firstResponder?.resignFirstResponder()
-                        window.firstResponder = next
-                        window.firstResponder?.becomeFirstResponder()
+                        becomeResponder(next)
                     }
                 }
             } else if char == ASCII.EOT {
                 stop()
             } else {
-                window.firstResponder?.handleEvent(char)
+                MainActor.assumeIsolated {
+                    window.firstResponder?.handleEvent(char)
+                }
             }
         }
     }
@@ -140,7 +167,7 @@ public class Application {
 
     func scheduleUpdate() {
         if !updateScheduled {
-            DispatchQueue.main.async { self.update() }
+            Task { self.update() }
             updateScheduled = true
         }
     }
@@ -158,9 +185,11 @@ public class Application {
     }
 
     private func handleWindowSizeChange() {
-        updateWindowSize()
-        control.layer.invalidate()
-        update()
+        MainActor.assumeIsolated {
+            updateWindowSize()
+            control.layer.invalidate()
+            update()
+        }
     }
 
     private func updateWindowSize() {
@@ -175,9 +204,11 @@ public class Application {
     }
 
     private func stop() {
-        renderer.stop()
-        resetInputMode() // Fix for: https://github.com/rensbreur/SwiftTUI/issues/25
-        exit(0)
+        MainActor.assumeIsolated {
+            renderer.stop()
+            resetInputMode() // Fix for: https://github.com/rensbreur/SwiftTUI/issues/25
+            exit(0)
+        }
     }
 
     /// Fix for: https://github.com/rensbreur/SwiftTUI/issues/25

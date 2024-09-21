@@ -9,23 +9,27 @@ extension Optional: View, PrimitiveView, GenericView, OptionalView where Wrapped
     }
 
     func buildNode(_ node: Node) {
-        if let view = self {
-            node.addNode(at: 0, Node(view: view.view))
+        observe(node: node) {
+            if let view = self {
+                node.addNode(at: 0, Node(view: view.view))
+            }
         }
     }
 
     func updateNode(_ node: Node) {
-        let last = node.view as! Self
-        node.view = self
-        switch (last, self) {
-        case (.none, .none):
-            break
-        case (.none, .some(let newValue)):
-            node.addNode(at: 0, Node(view: newValue.view))
-        case (.some, .none):
-            node.removeNode(at: 0)
-        case (.some, .some(let newValue)):
-            node.children[0].update(using: newValue.view)
+        observe(node: node) {
+            let last = node.view as! Self
+            node.view = self
+            switch (last, self) {
+            case (.none, .none):
+                break
+            case (.none, .some(let newValue)):
+                node.addNode(at: 0, Node(view: newValue.view))
+            case (.some, .none):
+                node.removeNode(at: 0)
+            case (.some, .some(let newValue)):
+                node.children[0].update(using: newValue.view)
+            }
         }
     }
 }

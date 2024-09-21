@@ -21,17 +21,21 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
     }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(view: content.view))
-        node.control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
-        node.environment = { $0.stackOrientation = .horizontal }
+        observe(node: node) {
+            node.addNode(at: 0, Node(view: content.view))
+            node.control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
+            node.environment = { $0.stackOrientation = .horizontal }
+        }
     }
 
     func updateNode(_ node: Node) {
-        node.view = self
-        node.children[0].update(using: content.view)
-        let control = node.control as! HStackControl
-        control.alignment = alignment
-        control.spacing = spacing ?? 1
+        observe(node: node) {
+            node.view = self
+            node.children[0].update(using: content.view)
+            let control = node.control as! HStackControl
+            control.alignment = alignment
+            control.spacing = spacing ?? 1
+        }
     }
 
     func insertControl(at index: Int, node: Node) {

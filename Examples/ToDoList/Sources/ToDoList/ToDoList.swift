@@ -1,16 +1,29 @@
 import SwiftTUI
+import Observation
 
-struct ToDoList: View {
-    @State var toDos: [ToDo] = [
+@Observable class Model {
+    var toDos: [ToDo] = [
         ToDo(text: "Hello"),
         ToDo(text: "World")
     ]
 
+    func onDelete(_ toDo: ToDo) {
+        toDos.removeAll(where: { $0.id == toDo.id })
+    }
+
+    func add(text: String) {
+        toDos.append(ToDo(text: text))
+    }
+}
+
+struct ToDoList: View {
+    @State var model: Model = Model()
+
     var body: some View {
         VStack(spacing: 1) {
             VStack {
-                ForEach(toDos) { toDo in
-                    ToDoView(toDo: toDo, onDelete: { toDos.removeAll(where: { $0.id == toDo.id }) })
+                ForEach(model.toDos) { toDo in
+                    ToDoView(toDo: toDo, onDelete: { model.onDelete(toDo) })
                 }
             }
             addToDo
@@ -22,7 +35,7 @@ struct ToDoList: View {
         HStack {
             Text("New to-do: ")
                 .italic()
-            TextField() { toDos.append(ToDo(text: $0)) }
+            TextField() { model.add(text: $0) }
             Spacer()
         }
     }

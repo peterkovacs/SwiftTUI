@@ -13,12 +13,16 @@ private struct OnAppear<Content: View>: View, PrimitiveView, ModifierView {
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(view: content.view))
+        observe(node: node) {
+            node.addNode(at: 0, Node(view: content.view))
+        }
     }
 
     func updateNode(_ node: Node) {
-        node.view = self
-        node.children[0].update(using: content.view)
+        observe(node: node) {
+            node.view = self
+            node.children[0].update(using: content.view)
+        }
     }
 
     func passControl(_ control: Control, node: Node) -> Control {
@@ -28,7 +32,7 @@ private struct OnAppear<Content: View>: View, PrimitiveView, ModifierView {
         return onAppearControl
     }
 
-    private class OnAppearControl: Control {
+    @MainActor private class OnAppearControl: Control {
         var action: () -> Void
         var didAppear = false
 
@@ -45,7 +49,7 @@ private struct OnAppear<Content: View>: View, PrimitiveView, ModifierView {
             children[0].layout(size: size)
             if !didAppear {
                 didAppear = true
-                DispatchQueue.main.async { [action] in action() }
+                Task { [action] in action() }
             }
         }
     }

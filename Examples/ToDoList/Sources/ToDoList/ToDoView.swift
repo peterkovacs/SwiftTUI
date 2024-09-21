@@ -5,7 +5,7 @@ struct ToDoView: View {
     let toDo: ToDo
     let onDelete: () -> Void
 
-    @State var deleting = false 
+    @State var deleting = false
 
     var body: some View {
         HStack {
@@ -20,8 +20,9 @@ struct ToDoView: View {
     }
 
     private func delete() {
-        deleting = true 
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) {
+        deleting = true
+        Task {
+            try await Task.sleep(for: .milliseconds(500))
             onDelete()
         }
     }

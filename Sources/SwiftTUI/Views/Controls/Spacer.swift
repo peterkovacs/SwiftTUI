@@ -8,15 +8,19 @@ public struct Spacer: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
-        node.control = SpacerControl(orientation: stackOrientation)
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
+            node.control = SpacerControl(orientation: stackOrientation)
+        }
     }
     
     func updateNode(_ node: Node) {
-        setupEnvironmentProperties(node: node)
-        node.view = self
-        let control = node.control as! SpacerControl
-        control.orientation = stackOrientation
+        observe(node: node) {
+            setupEnvironmentProperties(node: node)
+            node.view = self
+            let control = node.control as! SpacerControl
+            control.orientation = stackOrientation
+        }
     }
     
     private class SpacerControl: Control {
