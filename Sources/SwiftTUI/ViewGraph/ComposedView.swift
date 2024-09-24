@@ -9,23 +9,19 @@ struct ComposedView<I: View>: GenericView {
         view.setupStateProperties(node: node)
         view.setupEnvironmentProperties(node: node)
         
-        withObservationTracking {
+        observe(node: node) {
             node.addNode(at: 0, Node(view: view.body.view))
-        } onChange: { @MainActor in
-            node.root.application?.invalidateNode(node)
         }
         
     }
     
     func updateNode(_ node: Node) {
-        withObservationTracking {
+        observe(node: node) {
             view.setupStateProperties(node: node)
             view.setupEnvironmentProperties(node: node)
             node.view = self
             
             node.children[0].update(using: view.body.view)
-        } onChange: { @MainActor in
-            node.root.application?.invalidateNode(node)
         }
     }
     

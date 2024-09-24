@@ -7,13 +7,14 @@ import Foundation
 /// ```
 /// tail -f /tmp/swift_tui_log
 /// ```
+@MainActor
 public func log(_ item: Any, terminator: String = "\n") {
     print(item, terminator: terminator, to: &LogStream.logStream)
 }
 
 
-struct LogStream: TextOutputStream {
-    static var logStream = LogStream()
+struct LogStream: @unchecked Sendable, TextOutputStream {
+    @MainActor static var logStream = LogStream()
 
     func write(_ string: String) {
         let logURL = URL(fileURLWithPath: "/tmp/swift_tui_log")

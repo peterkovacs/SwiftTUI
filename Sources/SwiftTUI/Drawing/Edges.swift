@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Edges: OptionSet {
+public struct Edges: Sendable, OptionSet {
     public let rawValue: UInt8
 
     public init(rawValue: UInt8) {

@@ -7,10 +7,10 @@ import Foundation
 ///
 /// The named colors are ANSI colors. In many terminal emulators they are user-defined or part of a
 /// theme, and bold text automatically uses the bright color variant.
-public struct Color: Hashable {
+public struct Color: Sendable, Hashable {
     private let data: Data
 
-    private enum Data: Hashable {
+    private enum Data: Sendable, Hashable {
         case ansi(ANSIColor)
         case xterm(XTermColor)
         case trueColor(TrueColor)
@@ -86,29 +86,29 @@ public struct Color: Hashable {
     public static var gray: Color { .brightBlack }
 }
 
-struct ANSIColor: Hashable {
+public struct ANSIColor: Sendable, Hashable {
     let foregroundCode: Int
     let backgroundCode: Int
 
-    static var `default`: ANSIColor { ANSIColor(foregroundCode: 39, backgroundCode: 49) }
+    public static var `default`: ANSIColor { ANSIColor(foregroundCode: 39, backgroundCode: 49) }
 
-    static var black: ANSIColor { ANSIColor(foregroundCode: 30, backgroundCode: 40) }
-    static var red: ANSIColor { ANSIColor(foregroundCode: 31, backgroundCode: 41) }
-    static var green: ANSIColor { ANSIColor(foregroundCode: 32, backgroundCode: 42) }
-    static var yellow: ANSIColor { ANSIColor(foregroundCode: 33, backgroundCode: 43) }
-    static var blue: ANSIColor { ANSIColor(foregroundCode: 34, backgroundCode: 44) }
-    static var magenta: ANSIColor { ANSIColor(foregroundCode: 35, backgroundCode: 45) }
-    static var cyan: ANSIColor { ANSIColor(foregroundCode: 36, backgroundCode: 46) }
-    static var white: ANSIColor { ANSIColor(foregroundCode: 37, backgroundCode: 47) }
+    public static var black: ANSIColor { ANSIColor(foregroundCode: 30, backgroundCode: 40) }
+    public static var red: ANSIColor { ANSIColor(foregroundCode: 31, backgroundCode: 41) }
+    public static var green: ANSIColor { ANSIColor(foregroundCode: 32, backgroundCode: 42) }
+    public static var yellow: ANSIColor { ANSIColor(foregroundCode: 33, backgroundCode: 43) }
+    public static var blue: ANSIColor { ANSIColor(foregroundCode: 34, backgroundCode: 44) }
+    public static var magenta: ANSIColor { ANSIColor(foregroundCode: 35, backgroundCode: 45) }
+    public static var cyan: ANSIColor { ANSIColor(foregroundCode: 36, backgroundCode: 46) }
+    public static var white: ANSIColor { ANSIColor(foregroundCode: 37, backgroundCode: 47) }
 
-    static var brightBlack: ANSIColor { ANSIColor(foregroundCode: 90, backgroundCode: 100) }
-    static var brightRed: ANSIColor { ANSIColor(foregroundCode: 91, backgroundCode: 101) }
-    static var brightGreen: ANSIColor { ANSIColor(foregroundCode: 92, backgroundCode: 102) }
-    static var brightYellow: ANSIColor { ANSIColor(foregroundCode: 93, backgroundCode: 103) }
-    static var brightBlue: ANSIColor { ANSIColor(foregroundCode: 94, backgroundCode: 104) }
-    static var brightMagenta: ANSIColor { ANSIColor(foregroundCode: 95, backgroundCode: 105) }
-    static var brightCyan: ANSIColor { ANSIColor(foregroundCode: 96, backgroundCode: 106) }
-    static var brightWhite: ANSIColor { ANSIColor(foregroundCode: 97, backgroundCode: 107) }
+    public static var brightBlack: ANSIColor { ANSIColor(foregroundCode: 90, backgroundCode: 100) }
+    public static var brightRed: ANSIColor { ANSIColor(foregroundCode: 91, backgroundCode: 101) }
+    public static var brightGreen: ANSIColor { ANSIColor(foregroundCode: 92, backgroundCode: 102) }
+    public static var brightYellow: ANSIColor { ANSIColor(foregroundCode: 93, backgroundCode: 103) }
+    public static var brightBlue: ANSIColor { ANSIColor(foregroundCode: 94, backgroundCode: 104) }
+    public static var brightMagenta: ANSIColor { ANSIColor(foregroundCode: 95, backgroundCode: 105) }
+    public static var brightCyan: ANSIColor { ANSIColor(foregroundCode: 96, backgroundCode: 106) }
+    public static var brightWhite: ANSIColor { ANSIColor(foregroundCode: 97, backgroundCode: 107) }
 }
 
 struct XTermColor: Hashable {

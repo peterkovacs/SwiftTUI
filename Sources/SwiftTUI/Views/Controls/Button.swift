@@ -2,16 +2,16 @@ import Foundation
 
 public struct Button<Label: View>: View, PrimitiveView {
     let label: VStack<Label>
-    let hover: () -> Void
-    let action: () -> Void
-    
-    public init(action: @escaping () -> Void, hover: @escaping () -> Void = {}, @ViewBuilder label: () -> Label) {
+    let hover: @Sendable () -> Void
+    let action: @Sendable () -> Void
+
+    public init(action: @escaping @Sendable () -> Void, hover: @escaping @Sendable () -> Void = {}, @ViewBuilder label: () -> Label) {
         self.label = VStack(content: label())
         self.action = action
         self.hover = hover
     }
     
-    public init(_ text: String, hover: @escaping () -> Void = {}, action: @escaping () -> Void) where Label == Text {
+    public init(_ text: String, hover: @escaping @Sendable () -> Void = {}, action: @escaping @Sendable () -> Void) where Label == Text {
         self.label = VStack(content: Text(text))
         self.action = action
         self.hover = hover
@@ -20,33 +20,29 @@ public struct Button<Label: View>: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        withObservationTracking {
+        observe(node: node) {
             node.addNode(at: 0, Node(view: label.view))
             let control = ButtonControl(action: action, hover: hover)
             control.label = node.children[0].control(at: 0)
             control.addSubview(control.label, at: 0)
             node.control = control
-        } onChange: { @MainActor in
-            node.root.application?.invalidateNode(node)
         }
     }
     
     func updateNode(_ node: Node) {
         node.view = self
-        withObservationTracking {
+        observe(node: node) {
             node.children[0].update(using: label.view)
-        } onChange: { @MainActor in
-            node.application?.invalidateNode(node)
         }
     }
     
     private class ButtonControl: Control {
-        var action: @MainActor () -> Void
-        var hover: @MainActor () -> Void
+        var action: @Sendable @MainActor () -> Void
+        var hover: @Sendable @MainActor () -> Void
         var label: Control!
         weak var buttonLayer: ButtonLayer?
         
-        init(action: @escaping () -> Void, hover: @escaping () -> Void) {
+        init(action: @escaping @Sendable () -> Void, hover: @escaping @Sendable () -> Void) {
             self.action = action
             self.hover = hover
         }

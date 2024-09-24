@@ -4,15 +4,13 @@ extension Color: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        withObservationTracking {
+        observe(node: node) {
             node.control = ColorControl(color: self)
-        } onChange: { @MainActor in
-            node.root.application?.invalidateNode(node)
         }
     }
     
     func updateNode(_ node: Node) {
-        withObservationTracking {
+        observe(node: node) {
             let last = node.view as! Self
             node.view = self
             if self != last {
@@ -20,8 +18,6 @@ extension Color: View, PrimitiveView {
                 control.color = self
                 control.layer.invalidate()
             }
-        } onChange: { @MainActor in
-            node.root.application?.invalidateNode(node)
         }
     }
     
