@@ -2,6 +2,7 @@ import Foundation
 #if os(macOS)
 import AppKit
 #endif
+import Combine
 
 @MainActor
 public class Application {
@@ -14,12 +15,15 @@ public class Application {
 
     private var invalidatedNodes: [Node] = []
     private var updateScheduled = false
-    private var parser: KeyParser
 
     public init<I: View>(rootView: I) {
-        self.parser = KeyParser()
-
-        node = Node(view: VStack(content: rootView).view)
+        node = Node(
+            view: VStack(
+                content: rootView
+                    .environment(\.exit, Application.stop)
+            )
+                .view
+        )
         node.build()
 
         control = node.control!
@@ -37,33 +41,31 @@ public class Application {
         renderer.application = self
     }
 
+    private var cancellables = Set<AnyCancellable>()
+
+    private var sigwinch: AsyncStream<Void> {
+        let stream = AsyncStream<Void>.makeStream()
+
+        let sigWinChSource = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: .main)
+        sigWinChSource.setEventHandler(
+            qos: .userInitiated,
+            flags: [],
+            handler: { [continuation = stream.continuation] in
+                continuation.yield()
+            }
+        )
+        sigWinChSource.activate()
+
+        cancellables.insert(
+            .init {
+                sigWinChSource.cancel()
+            }
+        )
+
+        return stream.stream
+    }
+
     private func setup() {
-        //        let stdInSource = DispatchSource.makeReadSource(fileDescriptor: STDIN_FILENO, queue: .main)
-        //        stdInSource.setEventHandler(
-        //            qos: .default,
-        //            flags: [],
-        //            handler: self.handleInput
-        //        )
-        //        stdInSource.activate()
-        //        self.stdInSource = stdInSource
-
-//        let sigWinChSource = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: .main)
-//        sigWinChSource.setEventHandler(
-//            qos: .default,
-//            flags: [],
-//            handler: self.handleWindowSizeChange
-//        )
-//        sigWinChSource.activate()
-//
-//        signal(SIGINT, SIG_IGN)
-//        let sigIntSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-//        sigIntSource.setEventHandler(
-//            qos: .default,
-//            flags: [],
-//            handler: self.stop
-//        )
-//        sigIntSource.activate()
-
         setInputMode()
         updateWindowSize()
         control.layout(size: window.layer.frame.size)
@@ -73,7 +75,13 @@ public class Application {
     public func start() async throws {
         setup()
 
-        for try await key in await parser {
+        Task { @MainActor in
+            for try await _ in sigwinch {
+                self.handleWindowSizeChange()
+            }
+        }
+
+        for try await key in await KeyParser() {
             switch key {
             case Key(.down):
                 if let next = window.firstResponder?.selectableElement(below: 0) {
@@ -91,47 +99,24 @@ public class Application {
                 if let next = window.firstResponder?.selectableElement(leftOf: 0) {
                     becomeResponder(next)
                 }
-            case .ctrlD:
-                stop()
+            case Key(.char("d"), modifiers: .ctrl):
+                Self.stop()
             default:
                 if case .char(let value) = key.key {
-                    await { @MainActor in
-                        window.firstResponder?.handleEvent(.init(value))
-                    }()
+                    window.firstResponder?.handleEvent(.init(value))
                 }
             }
-            //            if key == .down {
-            //                if let next = window.firstResponder?.selectableElement(below: 0) {
-            //                    becomeResponder(next)
-            //                }
-            //            } else if key == .up {
-            //                if let next = window.firstResponder?.selectableElement(above: 0) {
-            //                    becomeResponder(next)
-            //                }
-            //            } else if key == .right {
-            //                if let next = window.firstResponder?.selectableElement(rightOf: 0) {
-            //                    becomeResponder(next)
-            //                }
-            //            } else if key == .left {
-            //                if let next = window.firstResponder?.selectableElement(leftOf: 0) {
-            //                    becomeResponder(next)
-            //                }
-            //            }
-            //        } else if char == ASCII.EOT {
-            //            stop()
-            //        } else {
-            //            MainActor.assumeIsolated {
-            //                window.firstResponder?.handleEvent(char)
-            //            }
-            //
-            //        }
         }
     }
 
-    private var originalTattr: termios = .init()
-    private func setInputMode() {
-        tcgetattr(STDIN_FILENO, &originalTattr)
-        var tattr = originalTattr
+    private static var terminalAttributes: termios?
+    public func setInputMode() {
+        var tattr = termios()
+        tcgetattr(STDIN_FILENO, &tattr)
+
+        if Self.terminalAttributes == nil {
+            Self.terminalAttributes = tattr
+        }
 
         //   ECHO: Stop the terminal from displaying pressed keys.
         // ICANON: Disable canonical ("cooked") input mode. Allows us to read inputs
@@ -177,40 +162,6 @@ public class Application {
         window.firstResponder?.becomeFirstResponder()
     }
 
-//    private func handleInput() async throws {
-//
-////        for char in string {
-////            // Replace this with a better Focus system.
-////            if arrowKeyParser.parse(character: char) {
-////                guard let key = arrowKeyParser.arrowKey else { continue }
-////                arrowKeyParser.arrowKey = nil
-////                if key == .down {
-////                    if let next = window.firstResponder?.selectableElement(below: 0) {
-////                        becomeResponder(next)
-////                    }
-////                } else if key == .up {
-////                    if let next = window.firstResponder?.selectableElement(above: 0) {
-////                        becomeResponder(next)
-////                    }
-////                } else if key == .right {
-////                    if let next = window.firstResponder?.selectableElement(rightOf: 0) {
-////                        becomeResponder(next)
-////                    }
-////                } else if key == .left {
-////                    if let next = window.firstResponder?.selectableElement(leftOf: 0) {
-////                        becomeResponder(next)
-////                    }
-////                }
-////            } else if char == ASCII.EOT {
-////                stop()
-////            } else {
-////                MainActor.assumeIsolated {
-////                    window.firstResponder?.handleEvent(char)
-////                }
-////            }
-////        }
-//    }
-
     func invalidateNode(_ node: Node) {
         invalidatedNodes.append(node)
         scheduleUpdate()
@@ -218,8 +169,8 @@ public class Application {
 
     func scheduleUpdate() {
         if !updateScheduled {
-            Task { self.update() }
             updateScheduled = true
+            Task { self.update() }
         }
     }
 
@@ -254,18 +205,17 @@ public class Application {
         renderer.setCache()
     }
 
-    private func stop() {
+    private static func stop() {
         MainActor.assumeIsolated {
-            renderer.stop()
-            resetInputMode() // Fix for: https://github.com/rensbreur/SwiftTUI/issues/25
+            write(EscapeSequence.disableAlternateBuffer)
+            write(EscapeSequence.showCursor)
+
+            if var attributes = Self.terminalAttributes {
+                tcsetattr(STDIN_FILENO, TCSAFLUSH, &attributes);
+                // Fix for: https://github.com/rensbreur/SwiftTUI/issues/25
+            }
+
             exit(0)
         }
     }
-
-    /// Fix for: https://github.com/rensbreur/SwiftTUI/issues/25
-    private func resetInputMode() {
-        // Reset ECHO and ICANON values:
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &originalTattr);
-    }
-
 }

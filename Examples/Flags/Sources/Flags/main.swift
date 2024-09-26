@@ -1,3 +1,3 @@
 import SwiftTUI
 
-Application(rootView: ContentView()).start()
+try await Application(rootView: ContentView()).start()

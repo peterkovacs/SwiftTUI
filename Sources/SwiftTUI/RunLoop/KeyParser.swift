@@ -14,51 +14,14 @@ public struct Key: Sendable, Equatable {
         case char(Unicode.Scalar)
         case up, down, left, right
         case home, end, pageUp, pageDown
-        case delete, insert
+        case delete, insert, backspace
+        case escape, enter
         case f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20
 
         // MARK: Key Aliases
         static let tab: Self   = .char(.init(9))
         static let space: Self = .char(.init(32))
     }
-
-    public static let ctrlAt = Key(.char(.init(0)), modifiers: .ctrl)
-    public static let ctrlA  = Key(.char(.init(1)), modifiers: .ctrl)
-    public static let ctrlB  = Key(.char(.init(2)), modifiers: .ctrl)
-    public static let ctrlC  = Key(.char(.init(3)), modifiers: .ctrl)
-    public static let ctrlD  = Key(.char(.init(4)), modifiers: .ctrl)
-    public static let ctrlE  = Key(.char(.init(5)), modifiers: .ctrl)
-    public static let ctrlF  = Key(.char(.init(6)), modifiers: .ctrl)
-    public static let ctrlG  = Key(.char(.init(7)), modifiers: .ctrl)
-    public static let ctrlH  = Key(.char(.init(8)), modifiers: .ctrl)
-    public static let ctrlI  = Key(.char(.init(9)), modifiers: .ctrl)
-    public static let ctrlJ  = Key(.char(.init(10)), modifiers: .ctrl)
-    public static let ctrlK  = Key(.char(.init(11)), modifiers: .ctrl)
-    public static let ctrlL  = Key(.char(.init(12)), modifiers: .ctrl)
-    public static let ctrlM  = Key(.char(.init(13)), modifiers: .ctrl)
-    public static let ctrlN  = Key(.char(.init(14)), modifiers: .ctrl)
-    public static let ctrlO  = Key(.char(.init(15)), modifiers: .ctrl)
-    public static let ctrlP  = Key(.char(.init(16)), modifiers: .ctrl)
-    public static let ctrlQ  = Key(.char(.init(17)), modifiers: .ctrl)
-    public static let ctrlR  = Key(.char(.init(18)), modifiers: .ctrl)
-    public static let ctrlS  = Key(.char(.init(19)), modifiers: .ctrl)
-    public static let ctrlT  = Key(.char(.init(20)), modifiers: .ctrl)
-    public static let ctrlU  = Key(.char(.init(21)), modifiers: .ctrl)
-    public static let ctrlV  = Key(.char(.init(22)), modifiers: .ctrl)
-    public static let ctrlW  = Key(.char(.init(23)), modifiers: .ctrl)
-    public static let ctrlX  = Key(.char(.init(24)), modifiers: .ctrl)
-    public static let ctrlY  = Key(.char(.init(25)), modifiers: .ctrl)
-    public static let ctrlZ  = Key(.char(.init(26)), modifiers: .ctrl)
-    public static let space  = Key(.char(.init(32)))
-    public static let tab    = Key(.char(.init(9)))
-
-    public static let ctrlOpenBracket  = Key(.char(.init(27)), modifiers: .ctrl)
-    public static let ctrlBackslash    = Key(.char(.init(28)), modifiers: .ctrl)
-    public static let ctrlCloseBracket = Key(.char(.init(29)), modifiers: .ctrl)
-    public static let ctrlCaret        = Key(.char(.init(30)), modifiers: .ctrl)
-    public static let ctrlUnderscore   = Key(.char(.init(31)), modifiers: .ctrl)
-    public static let ctrlQuestionMark = Key(.char(.init(127)), modifiers: .ctrl)
-
 
     public struct Modifiers: Sendable, OptionSet {
         public let rawValue: Int
@@ -94,7 +57,7 @@ public actor KeyParser: AsyncSequence {
 
     public struct AsyncIterator: AsyncIteratorProtocol {
         let owner: KeyParser
-        var iter: AsyncThrowingStream<Key, Error>.AsyncIterator? = nil
+        var iter: AsyncThrowingMapSequence<AsyncThrowingStream<Key, Error>, Key>.AsyncIterator? = nil
 
         init(owner: KeyParser) {
             self.owner = owner
@@ -111,7 +74,23 @@ public actor KeyParser: AsyncSequence {
 
     // MARK: Parse Input
 
-    func parse() -> AsyncThrowingStream<Key, Error> {
+    private nonisolated var bytes: AsyncThrowingStream<UInt8, Error> {
+        let stream = AsyncThrowingStream<UInt8, Error>.makeStream()
+
+        FileHandle.standardInput.readabilityHandler = { (fileHandle) in
+            for byte in fileHandle.availableData {
+                stream.continuation.yield(byte)
+            }
+        }
+
+        stream.continuation.onTermination = { _ in
+            FileHandle.standardInput.readabilityHandler = nil
+        }
+
+        return stream.stream
+    }
+
+    func parse() -> AsyncThrowingMapSequence<AsyncThrowingStream<Key, Error>, Key> {
         let stream = AsyncThrowingStream<Key, Error>.makeStream()
         let task = Task {
             do {
@@ -125,7 +104,46 @@ public actor KeyParser: AsyncSequence {
             task.cancel()
         }
 
-        return stream.stream
+        return stream.stream.map(translate)
+    }
+
+    nonisolated func translate(_ key: Key) -> Key {
+        switch key {
+        case Key(.char(.init(0))):   .init(.char("@"),  modifiers: .ctrl)
+        case Key(.char(.init(1))):   .init(.char("a"),  modifiers: .ctrl)
+        case Key(.char(.init(2))):   .init(.char("b"),  modifiers: .ctrl)
+        case Key(.char(.init(3))):   .init(.char("c"),  modifiers: .ctrl)
+        case Key(.char(.init(4))):   .init(.char("d"),  modifiers: .ctrl)
+        case Key(.char(.init(5))):   .init(.char("e"),  modifiers: .ctrl)
+        case Key(.char(.init(6))):   .init(.char("f"),  modifiers: .ctrl)
+        case Key(.char(.init(7))):   .init(.char("g"),  modifiers: .ctrl)
+        case Key(.char(.init(8))):   .init(.char("h"),  modifiers: .ctrl)
+        case Key(.char(.init(9))):   .init(.char("i"),  modifiers: .ctrl)
+        case Key(.char(.init(10))):  .init(.char("j"),  modifiers: .ctrl)
+        case Key(.char(.init(11))):  .init(.char("k"),  modifiers: .ctrl)
+        case Key(.char(.init(12))):  .init(.char("l"),  modifiers: .ctrl)
+        case Key(.char(.init(13))):  .init(.enter)
+        case Key(.char(.init(14))):  .init(.char("n"),  modifiers: .ctrl)
+        case Key(.char(.init(15))):  .init(.char("o"),  modifiers: .ctrl)
+        case Key(.char(.init(16))):  .init(.char("p"),  modifiers: .ctrl)
+        case Key(.char(.init(17))):  .init(.char("q"),  modifiers: .ctrl) // not working?
+        case Key(.char(.init(18))):  .init(.char("r"),  modifiers: .ctrl)
+        case Key(.char(.init(19))):  .init(.char("s"),  modifiers: .ctrl) // not working?
+        case Key(.char(.init(20))):  .init(.char("t"),  modifiers: .ctrl)
+        case Key(.char(.init(21))):  .init(.char("u"),  modifiers: .ctrl)
+        case Key(.char(.init(22))):  .init(.char("v"),  modifiers: .ctrl)
+        case Key(.char(.init(23))):  .init(.char("w"),  modifiers: .ctrl)
+        case Key(.char(.init(24))):  .init(.char("x"),  modifiers: .ctrl)
+        case Key(.char(.init(25))):  .init(.char("y"),  modifiers: .ctrl)
+        case Key(.char(.init(26))):  .init(.char("z"),  modifiers: .ctrl) // sigstp
+        case Key(.char(.init(27))):  .init(.escape)
+        case Key(.char(.init(28))):  .init(.char("\\"), modifiers: .ctrl)
+        case Key(.char(.init(29))):  .init(.char("]"),  modifiers: .ctrl)
+        case Key(.char(.init(30))):  .init(.char("^"),  modifiers: .ctrl)
+        case Key(.char(.init(31))):  .init(.char("_"),  modifiers: .ctrl)
+        case Key(.char(.init(127))): .init(.backspace)
+        default: key
+        }
     }
 
     nonisolated static private let mapping: [String: Key] = [
@@ -181,10 +199,11 @@ public actor KeyParser: AsyncSequence {
         "\u{1b}[Z": Key(.tab, modifiers: .shift),
 
         "\u{1b}[2~":   Key(.insert),
-        "\u{1b}[3;2~": Key(.insert, modifiers: .alt),
+        "\u{1b}[3;2~": Key(.insert),                   // differ
 
         "\u{1b}[3~":   Key(.delete),
-        "\u{1b}[3;3~": Key(.delete, modifiers: .alt),
+        "\u{1b}[3;3~": Key(.delete),                   // differ
+        "\u{1b}[3;5~": Key(.delete, modifiers: .ctrl), // differ
 
         "\u{1b}[5~":   Key(.pageUp),
         "\u{1b}[5;3~": Key(.pageUp, modifiers: .alt),
@@ -337,9 +356,9 @@ public actor KeyParser: AsyncSequence {
             for char in string.unicodeScalars { yield(character: char) }
         }
 
-        for try await character in FileHandle.standardInput.bytes.unicodeScalars {
+        for try await character in bytes.unicodeScalars {
             switch (state, character) {
-            case (.initial, "\u{1b}"):
+            case (.initial, "\u{1b}" as Unicode.Scalar):
                 // We received an escape (^[) character, we need to wait a small amount of time for the next character to come in
                 // before we emit an escape key that was received.
                 state = .escapeSequence(String(character), timeout(yielding: String(character)))

@@ -15,7 +15,6 @@ public struct EnvironmentValues {
     }
 }
 
-@MainActor
 @propertyWrapper
 public struct Environment<T>: AnyEnvironment {
     let keyPath: KeyPath<EnvironmentValues, T>
@@ -57,7 +56,6 @@ protocol AnyEnvironment {
     var valueReference: EnvironmentReference { get }
 }
 
-@MainActor
 class EnvironmentReference {
     weak var node: Node?
 }

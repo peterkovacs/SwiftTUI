@@ -1,7 +1,7 @@
 import SwiftTUI
 
 struct ColorPicker: View {
-    var pickColor: (Color) -> Void
+    var pickColor: @MainActor (Color) -> Void
 
     var body: some View {
         VStack {

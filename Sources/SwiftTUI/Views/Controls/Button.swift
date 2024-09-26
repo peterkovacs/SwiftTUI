@@ -2,16 +2,16 @@ import Foundation
 
 public struct Button<Label: View>: View, PrimitiveView {
     let label: VStack<Label>
-    let hover: @Sendable () -> Void
-    let action: @Sendable () -> Void
+    let hover: @MainActor () -> Void
+    let action: @MainActor () -> Void
 
-    public init(action: @escaping @Sendable () -> Void, hover: @escaping @Sendable () -> Void = {}, @ViewBuilder label: () -> Label) {
+    public init(action: @escaping @MainActor () -> Void, hover: @escaping @MainActor () -> Void = {}, @ViewBuilder label: () -> Label) {
         self.label = VStack(content: label())
         self.action = action
         self.hover = hover
     }
     
-    public init(_ text: String, hover: @escaping @Sendable () -> Void = {}, action: @escaping @Sendable () -> Void) where Label == Text {
+    public init(_ text: String, hover: @escaping @MainActor () -> Void = {}, action: @escaping @MainActor () -> Void) where Label == Text {
         self.label = VStack(content: Text(text))
         self.action = action
         self.hover = hover
@@ -42,7 +42,7 @@ public struct Button<Label: View>: View, PrimitiveView {
         var label: Control!
         weak var buttonLayer: ButtonLayer?
         
-        init(action: @escaping @Sendable () -> Void, hover: @escaping @Sendable () -> Void) {
+        init(action: @escaping @MainActor () -> Void, hover: @escaping @MainActor () -> Void) {
             self.action = action
             self.hover = hover
         }

@@ -57,11 +57,6 @@ class Renderer {
         }
     }
 
-    func stop() {
-        write(EscapeSequence.disableAlternateBuffer)
-        write(EscapeSequence.showCursor)
-    }
-
     private func drawPixel(_ cell: Cell, at position: Position) {
         guard position.column >= 0, position.line >= 0, position.column < layer.frame.size.width, position.line < layer.frame.size.height else {
             return
@@ -120,6 +115,6 @@ class Renderer {
 
 }
 
-private func write(_ str: String) {
+internal func write(_ str: String) {
     str.withCString { _ = write(STDOUT_FILENO, $0, strlen($0)) }
 }
