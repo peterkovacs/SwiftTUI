@@ -10,7 +10,19 @@ public struct Key: Sendable, Equatable {
         self.modifiers = modifiers
     }
 
-    public enum Value: Sendable, Hashable {
+    public enum Value: Sendable, Hashable, ExpressibleByExtendedGraphemeClusterLiteral {
+        public init(extendedGraphemeClusterLiteral value: Character) {
+            self = .char(value.unicodeScalars.first!)
+        }
+        
+        public init(unicodeScalarLiteral value: UnicodeScalar) {
+            self = .char(value)
+        }
+        
+        public typealias ExtendedGraphemeClusterLiteralType = Character
+
+        public typealias UnicodeScalarLiteralType = UnicodeScalar
+
         case char(Unicode.Scalar)
         case up, down, left, right
         case home, end, pageUp, pageDown

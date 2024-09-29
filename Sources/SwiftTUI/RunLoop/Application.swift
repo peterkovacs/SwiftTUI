@@ -21,8 +21,7 @@ public class Application {
             view: VStack(
                 content: rootView
                     .environment(\.exit, Application.stop)
-            )
-                .view
+            ).view
         )
         node.build()
 
@@ -82,7 +81,19 @@ public class Application {
         }
 
         for try await key in await KeyParser() {
+            if window.firstResponder?.handle(key: key) == true {
+                continue
+            }
+
             switch key {
+            case Key(.tab):
+                if let next = window.firstResponder?.selectableElement(next: 0) {
+                    becomeResponder(next)
+                }
+            case Key(.tab, modifiers: .shift):
+                if let next = window.firstResponder?.selectableElement(prev: 0) {
+                    becomeResponder(next)
+                }
             case Key(.down):
                 if let next = window.firstResponder?.selectableElement(below: 0) {
                     becomeResponder(next)
@@ -102,9 +113,7 @@ public class Application {
             case Key(.char("d"), modifiers: .ctrl):
                 Self.stop()
             default:
-                if case .char(let value) = key.key {
-                    window.firstResponder?.handleEvent(.init(value))
-                }
+                break
             }
         }
     }

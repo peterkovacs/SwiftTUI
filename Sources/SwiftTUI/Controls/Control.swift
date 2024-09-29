@@ -84,10 +84,14 @@ class Control: LayerDrawing {
 
     // MARK: - Event handling
 
-    func handleEvent(_ char: Character) {
+    func handle(key: Key) -> Bool {
         for subview in children {
-            subview.handleEvent(char)
+            if subview.handle(key: key) {
+                return true
+            }
         }
+
+        return false
     }
 
     func becomeFirstResponder() {
@@ -110,6 +114,8 @@ class Control: LayerDrawing {
         return nil
     }
 
+    func selectableElement(prev index: Int) -> Control? { parent?.selectableElement(prev: self.index) }
+    func selectableElement(next index: Int) -> Control? { parent?.selectableElement(next: self.index) }
     func selectableElement(below index: Int) -> Control? { parent?.selectableElement(below: self.index) }
     func selectableElement(above index: Int) -> Control? { parent?.selectableElement(above: self.index) }
     func selectableElement(rightOf index: Int) -> Control? { parent?.selectableElement(rightOf: self.index) }

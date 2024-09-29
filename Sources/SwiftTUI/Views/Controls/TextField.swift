@@ -14,18 +14,22 @@ public struct TextField: View, PrimitiveView {
     static var size: Int? { 1 }
 
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.control = TextFieldControl(placeholder: placeholder ?? "", placeholderColor: placeholderColor, action: action)
-        }
+        setupEnvironmentProperties(node: node)
+        node.control = TextFieldControl(
+            placeholder: placeholder ?? "",
+            placeholderColor: placeholderColor,
+            action: action
+        )
     }
 
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.view = self
-            (node.control as! TextFieldControl).action = action
-        }
+        setupEnvironmentProperties(node: node)
+        node.view = self
+
+        let control = node.control as! TextFieldControl
+        control.action = action
+        control.placeholder = placeholder ?? ""
+        control.placeholderColor = placeholderColor
     }
 
     private class TextFieldControl: Control {
@@ -33,36 +37,171 @@ public struct TextField: View, PrimitiveView {
         var placeholderColor: Color
         var action: (String) -> Void
 
-        var text: String = ""
+        var cursorPosition: String.Index
+        var text: String
 
-        init(placeholder: String, placeholderColor: Color, action: @escaping (String) -> Void) {
+        init(
+            placeholder: String,
+            placeholderColor: Color,
+            action: @escaping (String) -> Void
+        ) {
             self.placeholder = placeholder
             self.placeholderColor = placeholderColor
             self.action = action
+            self.text = String()
+            self.cursorPosition = text.endIndex
         }
 
         override func size(proposedSize: Size) -> Size {
             return Size(width: Extended(max(text.count, placeholder.count)) + 1, height: 1)
         }
 
-        override func handleEvent(_ char: Character) {
-            if char == "\n" {
+        private func word(before: String.Index) -> String.Index {
+            if cursorPosition != text.startIndex {
+                guard let endOfWord = text[..<cursorPosition].lastIndex(where: { $0.isNumber || $0.isLetter })
+                else { return text.startIndex }
+
+                guard let startOfWord = text[..<endOfWord]
+                    .lastIndex(where: { !$0.isNumber && !$0.isLetter })
+                else { return text.startIndex }
+
+                return text.index(after: startOfWord)
+            }
+
+            return text.startIndex
+        }
+
+        private func word(after: String.Index) -> String.Index {
+            if cursorPosition != text.endIndex {
+                let next = text.index(after: cursorPosition)
+                let substring = text[next...]
+
+                guard let endOfWord = text[next...].firstIndex(where: { !$0.isNumber && !$0.isLetter })
+                else { return text.endIndex }
+
+                guard let startOfWord = text[endOfWord...].firstIndex(where: { $0.isNumber || $0.isLetter })
+                else { return text.endIndex }
+
+                return startOfWord
+            }
+
+            return text.endIndex
+        }
+
+
+        override func handle(key: Key) -> Bool {
+            switch(key) {
+            case Key(.tab): return false
+
+            case Key(.enter):
                 action(text)
                 self.text = ""
+                self.cursorPosition = text.startIndex
                 layer.invalidate()
-                return
-            }
+                return true
 
-            if char == ASCII.DEL {
-                if !self.text.isEmpty {
-                    self.text.removeLast()
+            case Key(.backspace):
+                if !text.isEmpty, cursorPosition != text.startIndex {
+                    cursorPosition = text.index(before: cursorPosition)
+                    text.remove(at: cursorPosition)
                     layer.invalidate()
                 }
-                return
+                return true
+
+            case Key(.delete):
+                if !text.isEmpty, cursorPosition != text.startIndex {
+                    cursorPosition = text.index(before: cursorPosition)
+                    text.remove(at: cursorPosition)
+                    layer.invalidate()
+                }
+                return true
+
+            case Key(.left), Key("b", modifiers: .ctrl):
+                if cursorPosition != text.startIndex {
+                    cursorPosition = text.index(before: cursorPosition)
+                    layer.invalidate()
+                    return true
+                }
+
+            case Key(.left, modifiers: .ctrl), Key(.left, modifiers: .alt):
+                if cursorPosition != text.startIndex {
+                    cursorPosition = word(before: cursorPosition)
+                    layer.invalidate()
+                    return true
+                }
+
+            case Key(.right, modifiers: .ctrl), Key(.right, modifiers: .alt):
+                if cursorPosition != text.endIndex {
+                    cursorPosition = word(after: cursorPosition)
+                    layer.invalidate()
+                    return true
+                }
+
+            case Key(.right), Key("f", modifiers: .ctrl):
+                if cursorPosition != text.endIndex {
+                    cursorPosition = text.index(after: cursorPosition)
+                    layer.invalidate()
+                    return true
+                }
+
+            case Key("k", modifiers: .ctrl):
+                if cursorPosition != text.endIndex {
+                    text.removeSubrange(cursorPosition...)
+                    layer.invalidate()
+                }
+                return true
+
+            case Key("w", modifiers: .ctrl):
+                // If there is a whitespace characters to our left, skip over
+                // to find the first non-alpha-numeric
+                if cursorPosition != text.startIndex {
+                    let startOfWord = word(before: cursorPosition)
+                    text.removeSubrange(startOfWord..<cursorPosition)
+                    cursorPosition = startOfWord
+
+                    layer.invalidate()
+                    return true
+                }
+                return true
+
+
+            case Key("u", modifiers: .ctrl):
+                if !text.isEmpty {
+                    text = ""
+                    cursorPosition = text.endIndex
+                    layer.invalidate()
+                }
+                return true
+
+            case Key("a", modifiers: .ctrl):
+                if cursorPosition != text.endIndex {
+                    cursorPosition = text.startIndex
+                    layer.invalidate()
+                }
+                return true
+
+            case Key("e", modifiers: .ctrl):
+                if cursorPosition != text.endIndex {
+                    cursorPosition = text.endIndex
+                    layer.invalidate()
+                }
+                return true
+
+
+            case _ where key.modifiers.isEmpty:
+
+                if case .char(let value) = key.key {
+                    text.insert(.init(value), at: cursorPosition)
+                    cursorPosition = text.index(after: cursorPosition)
+                    layer.invalidate()
+                    return true
+                }
+
+            default:
+                break
             }
 
-            self.text += String(char)
-            layer.invalidate()
+            return false
         }
 
         override func cell(at position: Position) -> Cell? {
@@ -79,9 +218,13 @@ public struct TextField: View, PrimitiveView {
                 }
                 return .init(char: " ")
             }
-            if position.column.intValue == text.count, isFirstResponder { return Cell(char: " ", attributes: CellAttributes(underline: true)) }
+            if isFirstResponder, position.column.intValue == text.count, cursorPosition == text.endIndex {
+                return Cell(char: " ", attributes: CellAttributes(underline: true))
+            }
             guard position.column.intValue < text.count else { return .init(char: " ") }
-            return Cell(char: text[text.index(text.startIndex, offsetBy: position.column.intValue)])
+
+            let index = text.index(text.startIndex, offsetBy: position.column.intValue)
+            return Cell(char: text[index], attributes: .init(underline: isFirstResponder && index == cursorPosition))
         }
 
         override var selectable: Bool { true }

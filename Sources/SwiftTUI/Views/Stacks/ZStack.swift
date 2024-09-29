@@ -86,6 +86,14 @@ public struct ZStack<Content: View>: View, PrimitiveView, LayoutRootView {
         }
         
         // MARK: - Selection
+        override func selectableElement(next index: Int) -> Control? {
+            selectableElement(below: index)
+        }
+
+        override func selectableElement(prev index: Int) -> Control? {
+            selectableElement(above: index)
+        }
+
         override func selectableElement(below index: Int) -> Control? {
             var index = index + 1
             while index < children.count {

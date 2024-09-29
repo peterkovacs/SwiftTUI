@@ -3,10 +3,7 @@ import Foundation
 public struct Text: View, PrimitiveView {
     private var text: String?
     
-    private var _attributedText: Any?
-    
-    @available(macOS 12, *)
-    private var attributedText: AttributedString? { _attributedText as? AttributedString }
+    private var attributedText: AttributedString?
     
     @Environment(\.foregroundColor) private var foregroundColor: Color
     @Environment(\.bold) private var bold: Bool
@@ -18,9 +15,8 @@ public struct Text: View, PrimitiveView {
         self.text = text
     }
     
-    @available(macOS 12, *)
     public init(_ attributedText: AttributedString) {
-        self._attributedText = attributedText
+        self.attributedText = attributedText
     }
     
     static var size: Int? { 1 }
@@ -30,7 +26,7 @@ public struct Text: View, PrimitiveView {
             setupEnvironmentProperties(node: node)
             node.control = TextControl(
                 text: text,
-                attributedText: _attributedText,
+                attributedText: attributedText,
                 foregroundColor: foregroundColor,
                 bold: bold,
                 italic: italic,
@@ -46,7 +42,7 @@ public struct Text: View, PrimitiveView {
             node.view = self
             let control = node.control as! TextControl
             control.text = text
-            control._attributedText = _attributedText
+            control.attributedText = attributedText
             control.foregroundColor = foregroundColor
             control.bold = bold
             control.italic = italic
@@ -59,11 +55,8 @@ public struct Text: View, PrimitiveView {
     private class TextControl: Control {
         var text: String?
         
-        var _attributedText: Any?
-        
-        @available(macOS 12, *)
-        var attributedText: AttributedString? { _attributedText as? AttributedString }
-        
+        var attributedText: AttributedString?
+
         var foregroundColor: Color
         var bold: Bool
         var italic: Bool
@@ -72,7 +65,7 @@ public struct Text: View, PrimitiveView {
         
         init(
             text: String?,
-            attributedText: Any?,
+            attributedText: AttributedString?,
             foregroundColor: Color,
             bold: Bool,
             italic: Bool,
@@ -80,7 +73,7 @@ public struct Text: View, PrimitiveView {
             strikethrough: Bool
         ) {
             self.text = text
-            self._attributedText = attributedText
+            self.attributedText = attributedText
             self.foregroundColor = foregroundColor
             self.bold = bold
             self.italic = italic
@@ -95,7 +88,8 @@ public struct Text: View, PrimitiveView {
         override func cell(at position: Position) -> Cell? {
             guard position.line == 0 else { return nil }
             guard position.column < Extended(characterCount) else { return .init(char: " ") }
-            if #available(macOS 12, *), let attributedText {
+
+            if let attributedText {
                 let characters = attributedText.characters
                 let i = characters.index(characters.startIndex, offsetBy: position.column.intValue)
                 let char = attributedText[i ..< characters.index(after: i)]
@@ -113,6 +107,7 @@ public struct Text: View, PrimitiveView {
                     attributes: cellAttributes
                 )
             }
+
             if let text {
                 let cellAttributes = CellAttributes(
                     bold: bold,
@@ -126,11 +121,12 @@ public struct Text: View, PrimitiveView {
                     attributes: cellAttributes
                 )
             }
+
             return nil
         }
         
         private var characterCount: Int {
-            if #available(macOS 12, *), let attributedText {
+            if let attributedText {
                 return attributedText.characters.count
             }
             return text?.count ?? 0

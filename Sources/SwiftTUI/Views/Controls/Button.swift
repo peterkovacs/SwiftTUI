@@ -56,10 +56,17 @@ public struct Button<Label: View>: View, PrimitiveView {
             self.label.layout(size: size)
         }
         
-        override func handleEvent(_ char: Character) {
-            if char == "\n" || char == " " {
+        override func handle(key: Key) -> Bool {
+            switch(key.key) {
+            case .enter, .space:
                 action()
+                return true
+            default:
+                // TODO: Any other keys to handle here?
+                break
             }
+
+            return false
         }
         
         override var selectable: Bool { true }
