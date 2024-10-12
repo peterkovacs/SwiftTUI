@@ -2,13 +2,19 @@ import Foundation
 
 public struct TextField: View, PrimitiveView {
     public let placeholder: String?
-    public let action: (String) -> Void
+    public let text: Binding<String>
+    public let onSubmit: (String) -> Void
 
     @Environment(\.placeholderColor) private var placeholderColor: Color
 
-    public init(placeholder: String? = nil, action: @escaping (String) -> Void) {
+    public init(
+        _ text: Binding<String>,
+        placeholder: String? = nil,
+        onSubmit: @escaping (String) -> Void
+    ) {
+        self.text = text
         self.placeholder = placeholder
-        self.action = action
+        self.onSubmit = onSubmit
     }
 
     static var size: Int? { 1 }
@@ -18,7 +24,7 @@ public struct TextField: View, PrimitiveView {
         node.control = TextFieldControl(
             placeholder: placeholder ?? "",
             placeholderColor: placeholderColor,
-            action: action
+            action: onSubmit
         )
     }
 
@@ -27,7 +33,7 @@ public struct TextField: View, PrimitiveView {
         node.view = self
 
         let control = node.control as! TextFieldControl
-        control.action = action
+        control.action = onSubmit
         control.placeholder = placeholder ?? ""
         control.placeholderColor = placeholderColor
     }
@@ -91,7 +97,8 @@ public struct TextField: View, PrimitiveView {
 
         override func handle(key: Key) -> Bool {
             switch(key) {
-            case Key(.tab): return false
+            case Key(.tab), Key(.tab, modifiers: .shift):
+                return false
 
             case Key(.enter):
                 action(text)

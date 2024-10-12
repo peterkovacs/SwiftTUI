@@ -21,31 +21,29 @@ public struct ForEach<Data, ID, Content>: View, PrimitiveView where Data : Rando
     static var size: Int? { nil }
 
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            let views: [Content] = data.map(content)
-            for (i, view) in views.enumerated() {
-                node.addNode(at: i, Node(view: view.view))
-            }
+        let views: [Content] = data.map(content)
+        for (i, view) in views.enumerated() {
+            node.addNode(at: i, Node(observing: view.view))
         }
     }
 
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            let last = node.view as! Self
-            node.view = self
-            let diff = data.difference(from: last.data, by: { $0[keyPath: id] == $1[keyPath: last.id] })
-            var needsUpdate = Set<Int>(0 ..< data.count)
-            for change in diff {
-                switch change {
-                case .remove(let offset, _, _):
-                    node.removeNode(at: offset)
-                case .insert(let offset, let element, _):
-                    node.addNode(at: offset, Node(view: content(element).view))
-                    needsUpdate.remove(offset)
-                }
+        let last = node.view as! Self
+        node.view = self
+        let diff = data.difference(from: last.data, by: { $0[keyPath: id] == $1[keyPath: last.id] })
+        var needsUpdate = Set<Int>(0 ..< data.count)
+
+        for change in diff {
+            switch change {
+            case .remove(let offset, _, _):
+                node.removeNode(at: offset)
+            case .insert(let offset, let element, _):
+                node.addNode(at: offset, Node(observing: content(element).view ))
+                needsUpdate.remove(offset)
             }
+
             for i in needsUpdate {
-                node.children[i].update(using: content(data[data.index(data.startIndex, offsetBy:i)]).view)
+                node.children[i].update(using: content(data[data.index(data.startIndex, offsetBy:i)]).view )
             }
         }
     }

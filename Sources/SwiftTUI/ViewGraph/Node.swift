@@ -3,6 +3,8 @@ import Foundation
 import Combine
 #endif
 
+
+
 /// The node of a view graph.
 ///
 /// The view graph is the runtime representation of the views in an application.
@@ -16,7 +18,7 @@ import Combine
 /// because structural views (ForEach, etc.) have their own node.
 @MainActor
 final class Node {
-    var view: GenericView
+    var view: (any GenericView)!
 
     var state: [String: Any] = [:]
     var environment: ((inout EnvironmentValues) -> Void)?
@@ -34,13 +36,36 @@ final class Node {
 
     private(set) var built = false
 
-    init(view: GenericView) {
+    init(observing: @autoclosure () -> GenericView) {
+        self.view = withObservationTracking(observing) { [weak self] in
+            guard let self else { return }
+
+            MainActor.assumeIsolated {
+                invalidate()
+            }
+        }
+    }
+
+    func update(using observing: @autoclosure () -> GenericView) {
+        build()
+
+        let view = withObservationTracking(observing) { [weak self] in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                invalidate()
+            }
+        }
+        view.updateNode(self)
         self.view = view
     }
 
-    func update(using view: GenericView) {
-        build()
-        view.updateNode(self)
+    func invalidate() {
+        if parent == nil {
+            application?.invalidateNode(self)
+        }
+
+        log("invalidate: \(view.debugDescription)")
+        root.application?.invalidateNode(self)
     }
 
     var root: Node { parent?.root ?? self }
@@ -66,7 +91,7 @@ final class Node {
         if !built {
             self.view.buildNode(self)
             built = true
-            if !(view is OptionalView), let container = view as? LayoutRootView {
+            if let container = view as? LayoutRootView {
                 container.loadData(node: self)
             }
         }
@@ -111,7 +136,7 @@ final class Node {
             let size = child.size
             if (offset - i) < size {
                 let control = child.control(at: offset - i)
-                if !(view is OptionalView), let modifier = self.view as? ModifierView {
+                if let modifier = self.view as? ModifierView {
                     return modifier.passControl(control, node: self)
                 }
                 return control
@@ -124,7 +149,7 @@ final class Node {
     // MARK: - Container changes
 
     private func insertControl(at offset: Int) {
-        if !(view is OptionalView), let container = view as? LayoutRootView {
+        if let container = view as? LayoutRootView {
             container.insertControl(at: offset, node: self)
             return
         }
@@ -132,7 +157,7 @@ final class Node {
     }
 
     private func removeControl(at offset: Int) {
-        if !(view is OptionalView), let container = view as? LayoutRootView {
+        if let container = view as? LayoutRootView {
             container.removeControl(at: offset, node: self)
             return
         }

@@ -2,7 +2,6 @@ import Foundation
 #if os(macOS)
 import AppKit
 #endif
-import Combine
 
 @MainActor
 public class Application {
@@ -228,3 +227,32 @@ public class Application {
         }
     }
 }
+
+final internal class AnyCancellable: Hashable {
+    var cancelCalled: Bool
+    let _cancel: () -> Void
+
+    init(_ cancel: @escaping () -> Void) {
+        self.cancelCalled = false
+        self._cancel = cancel
+    }
+
+    func cancel() {
+        guard !cancelCalled else { return }
+        cancelCalled = true
+        _cancel()
+    }
+
+    deinit {
+        cancel()
+    }
+
+    static func ==(lhs: AnyCancellable, rhs: AnyCancellable) -> Bool {
+        lhs === rhs
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
+    }
+}
+

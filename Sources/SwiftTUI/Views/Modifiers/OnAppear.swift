@@ -13,16 +13,12 @@ private struct OnAppear<Content: View>: View, PrimitiveView, ModifierView {
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            node.addNode(at: 0, Node(view: content.view))
-        }
+        node.addNode(at: 0, Node(observing: content.view))
     }
 
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            node.view = self
-            node.children[0].update(using: content.view)
-        }
+        node.view = self
+        node.children[0].update(using: content.view)
     }
 
     func passControl(_ control: Control, node: Node) -> Control {

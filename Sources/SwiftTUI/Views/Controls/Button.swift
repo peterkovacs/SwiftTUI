@@ -20,20 +20,16 @@ public struct Button<Label: View>: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            node.addNode(at: 0, Node(view: label.view))
-            let control = ButtonControl(action: action, hover: hover)
-            control.label = node.children[0].control(at: 0)
-            control.addSubview(control.label, at: 0)
-            node.control = control
-        }
+        node.addNode(at: 0, Node(observing: label.view))
+        let control = ButtonControl(action: action, hover: hover)
+        control.label = node.children[0].control(at: 0)
+        control.addSubview(control.label, at: 0)
+        node.control = control
     }
     
     func updateNode(_ node: Node) {
         node.view = self
-        observe(node: node) {
-            node.children[0].update(using: label.view)
-        }
+        node.children[0].update(using: label.view)
     }
     
     private class ButtonControl: Control {

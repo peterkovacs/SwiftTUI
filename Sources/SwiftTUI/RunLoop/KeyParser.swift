@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import Parsing
+import CUnicode
 
 public struct Key: Sendable, Equatable {
     public let key: Value
@@ -8,17 +8,14 @@ public struct Key: Sendable, Equatable {
     init(_ key: Value, modifiers: Modifiers = []) {
         self.key = key
         self.modifiers = modifiers
+        self.normalize()
     }
 
-    public enum Value: Sendable, Hashable, ExpressibleByExtendedGraphemeClusterLiteral {
-        public init(extendedGraphemeClusterLiteral value: Character) {
-            self = .char(value.unicodeScalars.first!)
-        }
-        
+    public enum Value: Sendable, Hashable, ExpressibleByUnicodeScalarLiteral {
         public init(unicodeScalarLiteral value: UnicodeScalar) {
             self = .char(value)
         }
-        
+
         public typealias ExtendedGraphemeClusterLiteralType = Character
 
         public typealias UnicodeScalarLiteralType = UnicodeScalar
@@ -26,13 +23,46 @@ public struct Key: Sendable, Equatable {
         case char(Unicode.Scalar)
         case up, down, left, right
         case home, end, pageUp, pageDown
-        case delete, insert, backspace
-        case escape, enter
-        case f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20
+        case insert, backspace
+        case f1,  f2,  f3,  f4,  f5,  f6,  f7,  f8,  f9,  f10,
+             f11, f12, f13, f14, f15, f16, f17, f18, f19, f20
+
 
         // MARK: Key Aliases
-        static let tab: Self   = .char(.init(9))
-        static let space: Self = .char(.init(32))
+        static let nul: Self     = "\u{0}"
+        static let soh: Self     = "\u{1}"
+        static let stx: Self     = "\u{2}"
+        static let etx: Self     = "\u{3}"
+        static let eot: Self     = "\u{4}"
+        static let enq: Self     = "\u{5}"
+        static let ack: Self     = "\u{6}"
+        static let bel: Self     = "\u{7}"
+        static let bs: Self      = "\u{8}"
+        static let tab: Self     = "\u{9}"
+        static let newLine: Self = "\u{a}"
+        static let vt: Self      = "\u{b}"
+        static let np: Self      = "\u{c}"
+        static let enter: Self   = "\u{d}"
+        static let so: Self      = "\u{e}"
+        static let si: Self      = "\u{f}"
+        static let dle: Self     = "\u{10}"
+        static let dc1: Self     = "\u{11}"
+        static let dc2: Self     = "\u{12}"
+        static let dc3: Self     = "\u{13}"
+        static let dc4: Self     = "\u{14}"
+        static let nak: Self     = "\u{15}"
+        static let syn: Self     = "\u{16}"
+        static let etb: Self     = "\u{17}"
+        static let can: Self     = "\u{18}"
+        static let em: Self      = "\u{19}"
+        static let sub: Self     = "\u{1a}"
+        static let escape: Self  = "\u{1b}"
+        static let fs: Self      = "\u{1c}"
+        static let gs: Self      = "\u{1d}"
+        static let rs: Self      = "\u{1e}"
+        static let us: Self      = "\u{1f}"
+        static let space: Self   = " "
+        static let delete: Self  = "\u{7f}"
     }
 
     public struct Modifiers: Sendable, OptionSet {
@@ -46,6 +76,46 @@ public struct Key: Sendable, Equatable {
             self.rawValue = rawValue
         }
     }
+
+
+    private mutating func normalize() {
+        switch (key, modifiers) {
+        case ("@", .ctrl):     self = .init("\u{0}")
+        case ("a", .ctrl):     self = .init("\u{1}")
+        case ("b", .ctrl):     self = .init("\u{2}")
+        case ("c", .ctrl):     self = .init("\u{3}")
+        case ("d", .ctrl):     self = .init("\u{4}")
+        case ("e", .ctrl):     self = .init("\u{5}")
+        case ("f", .ctrl):     self = .init("\u{6}")
+        case ("g", .ctrl):     self = .init("\u{7}")
+        case ("h", .ctrl):     self = .init("\u{8}")
+        case ("i", .ctrl):     self = .init("\u{9}")
+        case ("j", .ctrl):     self = .init("\u{a}")
+        case ("k", .ctrl):     self = .init("\u{b}")
+        case ("l", .ctrl):     self = .init("\u{c}")
+        case ("m", .ctrl):     self = .init("\u{d}")
+        case ("n", .ctrl):     self = .init("\u{e}")
+        case ("o", .ctrl):     self = .init("\u{f}")
+        case ("p", .ctrl):     self = .init("\u{10}")
+        case ("q", .ctrl):     self = .init("\u{11}")
+        case ("r", .ctrl):     self = .init("\u{12}")
+        case ("s", .ctrl):     self = .init("\u{13}")
+        case ("t", .ctrl):     self = .init("\u{14}")
+        case ("u", .ctrl):     self = .init("\u{15}")
+        case ("v", .ctrl):     self = .init("\u{16}")
+        case ("w", .ctrl):     self = .init("\u{17}")
+        case ("x", .ctrl):     self = .init("\u{18}")
+        case ("y", .ctrl):     self = .init("\u{19}")
+        case ("z", .ctrl):     self = .init("\u{1a}")
+        case ("[", .ctrl):     self = .init("\u{1b}")
+        case ("\\", .ctrl):    self = .init("\u{1c}")
+        case ("]", .ctrl):     self = .init("\u{1d}")
+        case ("^", .ctrl):     self = .init("\u{1e}")
+        case ("_", .ctrl):     self = .init("\u{1f}")
+        case ("?", .ctrl):     self = .init("\u{7f}")
+        default: break
+        }
+    }
 }
 
 public actor KeyParser: AsyncSequence {
@@ -55,9 +125,11 @@ public actor KeyParser: AsyncSequence {
     }
 
     var state: State = .initial
+    var fileHandle: FileHandle
 
-    public init() {
+    public init(fileHandle: consuming FileHandle = .standardInput) {
         self.state = .initial
+        self.fileHandle = fileHandle
     }
 
     // MARK: AsyncSequence
@@ -69,7 +141,7 @@ public actor KeyParser: AsyncSequence {
 
     public struct AsyncIterator: AsyncIteratorProtocol {
         let owner: KeyParser
-        var iter: AsyncThrowingMapSequence<AsyncThrowingStream<Key, Error>, Key>.AsyncIterator? = nil
+        var iter: AsyncThrowingStream<Key, Error>.AsyncIterator? = nil
 
         init(owner: KeyParser) {
             self.owner = owner
@@ -85,24 +157,89 @@ public actor KeyParser: AsyncSequence {
     }
 
     // MARK: Parse Input
+    private var bytes: AsyncThrowingStream<UInt8, Error> {
+        AsyncThrowingStream<UInt8, Error> { continuation in
+            fileHandle.readabilityHandler = { (fileHandle) in
+                for byte in fileHandle.availableData {
+                    continuation.yield(byte)
+                }
+            }
 
-    private nonisolated var bytes: AsyncThrowingStream<UInt8, Error> {
-        let stream = AsyncThrowingStream<UInt8, Error>.makeStream()
+            continuation.onTermination = { termination in
+                Task {
+                    await self.fileHandle.readabilityHandler = nil
+                }
+            }
+        }
+    }
 
-        FileHandle.standardInput.readabilityHandler = { (fileHandle) in
-            for byte in fileHandle.availableData {
-                stream.continuation.yield(byte)
+    enum DecodingError: Error {
+        case invalidUTF8Encoding
+    }
+
+    // Normally you could just do `bytes.asyncScalars`, but since
+    // this is only available on macOS, implementing our own.
+    private var unicodeScalars: AsyncThrowingStream<Unicode.Scalar, Error> {
+        let stream = AsyncThrowingStream<Unicode.Scalar, Error>.makeStream()
+
+        enum State {
+            case initial
+            case parsing(Int32, [UInt8])
+        }
+
+        let task = Task {
+            var state = State.initial
+            do {
+                for try await byte in bytes {
+                    switch state {
+                    case .initial:
+                        let len = utf8_len(byte)
+                        guard len > 0 else {
+                            stream.continuation.finish(
+                                throwing: DecodingError.invalidUTF8Encoding
+                            )
+                            return
+                        }
+                        guard len > 1 else {
+                            stream.continuation.yield(.init(byte))
+                            continue
+                        }
+
+                        state = .parsing(len, [byte])
+                    case .parsing(let len, var array):
+                        array.append(byte)
+
+                        if array.count == len {
+                            let codePoint = to_codepoint(array)
+                            guard codePoint >= 0, let scalar = UnicodeScalar(codePoint) else {
+                                stream.continuation.finish(
+                                    throwing: DecodingError.invalidUTF8Encoding
+                                )
+                                return
+                            }
+
+                            stream.continuation.yield(scalar)
+                            state = .initial
+                        } else {
+                            state = .parsing(len, array)
+                        }
+                    }
+                }
+            } catch {
+                stream.continuation.finish(throwing: error)
             }
         }
 
-        stream.continuation.onTermination = { _ in
-            FileHandle.standardInput.readabilityHandler = nil
+        stream.continuation.onTermination = { termination in
+            if case .cancelled = termination {
+                task.cancel()
+            }
         }
 
         return stream.stream
     }
 
-    func parse() -> AsyncThrowingMapSequence<AsyncThrowingStream<Key, Error>, Key> {
+    private func parse() -> AsyncThrowingStream<Key, Error> {
         let stream = AsyncThrowingStream<Key, Error>.makeStream()
         let task = Task {
             do {
@@ -116,99 +253,68 @@ public actor KeyParser: AsyncSequence {
             task.cancel()
         }
 
-        return stream.stream.map(translate)
-    }
-
-    nonisolated func translate(_ key: Key) -> Key {
-        switch key {
-        case Key(.char(.init(0))):   .init(.char("@"),  modifiers: .ctrl)
-        case Key(.char(.init(1))):   .init(.char("a"),  modifiers: .ctrl)
-        case Key(.char(.init(2))):   .init(.char("b"),  modifiers: .ctrl)
-        case Key(.char(.init(3))):   .init(.char("c"),  modifiers: .ctrl)
-        case Key(.char(.init(4))):   .init(.char("d"),  modifiers: .ctrl)
-        case Key(.char(.init(5))):   .init(.char("e"),  modifiers: .ctrl)
-        case Key(.char(.init(6))):   .init(.char("f"),  modifiers: .ctrl)
-        case Key(.char(.init(7))):   .init(.char("g"),  modifiers: .ctrl)
-        case Key(.char(.init(8))):   .init(.char("h"),  modifiers: .ctrl)
-        case Key(.char(.init(9))):   .init(.char("i"),  modifiers: .ctrl)
-        case Key(.char(.init(10))):  .init(.char("j"),  modifiers: .ctrl)
-        case Key(.char(.init(11))):  .init(.char("k"),  modifiers: .ctrl)
-        case Key(.char(.init(12))):  .init(.char("l"),  modifiers: .ctrl)
-        case Key(.char(.init(13))):  .init(.enter)
-        case Key(.char(.init(14))):  .init(.char("n"),  modifiers: .ctrl)
-        case Key(.char(.init(15))):  .init(.char("o"),  modifiers: .ctrl)
-        case Key(.char(.init(16))):  .init(.char("p"),  modifiers: .ctrl)
-        case Key(.char(.init(17))):  .init(.char("q"),  modifiers: .ctrl) // not working?
-        case Key(.char(.init(18))):  .init(.char("r"),  modifiers: .ctrl)
-        case Key(.char(.init(19))):  .init(.char("s"),  modifiers: .ctrl) // not working?
-        case Key(.char(.init(20))):  .init(.char("t"),  modifiers: .ctrl)
-        case Key(.char(.init(21))):  .init(.char("u"),  modifiers: .ctrl)
-        case Key(.char(.init(22))):  .init(.char("v"),  modifiers: .ctrl)
-        case Key(.char(.init(23))):  .init(.char("w"),  modifiers: .ctrl)
-        case Key(.char(.init(24))):  .init(.char("x"),  modifiers: .ctrl)
-        case Key(.char(.init(25))):  .init(.char("y"),  modifiers: .ctrl)
-        case Key(.char(.init(26))):  .init(.char("z"),  modifiers: .ctrl) // sigstp
-        case Key(.char(.init(27))):  .init(.escape)
-        case Key(.char(.init(28))):  .init(.char("\\"), modifiers: .ctrl)
-        case Key(.char(.init(29))):  .init(.char("]"),  modifiers: .ctrl)
-        case Key(.char(.init(30))):  .init(.char("^"),  modifiers: .ctrl)
-        case Key(.char(.init(31))):  .init(.char("_"),  modifiers: .ctrl)
-        case Key(.char(.init(127))): .init(.backspace)
-        default: key
-        }
+        return stream.stream
     }
 
     nonisolated static private let mapping: [String: Key] = [
         // //    Arrow keys
-        "\u{1b}[A": Key(.up),
-        "\u{1b}[B": Key(.down),
-        "\u{1b}[C": Key(.right),
-        "\u{1b}[D": Key(.left),
-        "\u{1b}[1;2A": Key(.up, modifiers: .shift),
-        "\u{1b}[1;2B": Key(.down, modifiers: .shift),
+        "\u{1b}[A":    Key(.up),
+        "\u{1b}[B":    Key(.down),
+        "\u{1b}[C":    Key(.right),
+        "\u{1b}[D":    Key(.left),
+
+        "\u{1b}[1;2A": Key(.up,    modifiers: .shift),
+        "\u{1b}[1;2B": Key(.down,  modifiers: .shift),
         "\u{1b}[1;2C": Key(.right, modifiers: .shift),
-        "\u{1b}[1;2D": Key(.left, modifiers: .shift),
-        "\u{1b}[OA":   Key(.up, modifiers: .shift),    // DECCKM
-        "\u{1b}[OB":   Key(.down, modifiers: .shift),  // DECCKM
+        "\u{1b}[1;2D": Key(.left,  modifiers: .shift),
+
+        "\u{1b}[OA":   Key(.up,    modifiers: .shift), // DECCKM
+        "\u{1b}[OB":   Key(.down,  modifiers: .shift), // DECCKM
         "\u{1b}[OC":   Key(.right, modifiers: .shift), // DECCKM
-        "\u{1b}[OD":   Key(.left, modifiers: .shift),  // DECCKM
-        "\u{1b}[a":    Key(.up, modifiers: .shift),    // urxvt
-        "\u{1b}[b":    Key(.down, modifiers: .shift),  // urxvt
+        "\u{1b}[OD":   Key(.left,  modifiers: .shift), // DECCKM
+
+        "\u{1b}[a":    Key(.up,    modifiers: .shift), // urxvt
+        "\u{1b}[b":    Key(.down,  modifiers: .shift), // urxvt
         "\u{1b}[c":    Key(.right, modifiers: .shift), // urxvt
-        "\u{1b}[d":    Key(.left, modifiers: .shift),  // urxvt
-        "\u{1b}[1;3A": Key(.up, modifiers: .alt),
-        "\u{1b}[1;3B": Key(.down, modifiers: .alt),
+        "\u{1b}[d":    Key(.left,  modifiers: .shift), // urxvt
+
+        "\u{1b}[1;3A": Key(.up,    modifiers: .alt),
+        "\u{1b}[1;3B": Key(.down,  modifiers: .alt),
         "\u{1b}[1;3C": Key(.right, modifiers: .alt),
-        "\u{1b}[1;3D": Key(.left, modifiers: .alt),
+        "\u{1b}[1;3D": Key(.left,  modifiers: .alt),
 
-        "\u{1b}[1;4A": Key(.up, modifiers: [.shift, .alt]),
-        "\u{1b}[1;4B": Key(.down, modifiers: [.shift, .alt]),
+        "\u{1b}[1;4A": Key(.up,    modifiers: [.shift, .alt]),
+        "\u{1b}[1;4B": Key(.down,  modifiers: [.shift, .alt]),
         "\u{1b}[1;4C": Key(.right, modifiers: [.shift, .alt]),
-        "\u{1b}[1;4D": Key(.left, modifiers: [.shift, .alt]),
+        "\u{1b}[1;4D": Key(.left,  modifiers: [.shift, .alt]),
 
-        "\u{1b}[1;5A": Key(.up, modifiers: .ctrl),
-        "\u{1b}[1;5B": Key(.down, modifiers: .ctrl),
+        "\u{1b}[1;5A": Key(.up,    modifiers: .ctrl),
+        "\u{1b}[1;5B": Key(.down,  modifiers: .ctrl),
         "\u{1b}[1;5C": Key(.right, modifiers: .ctrl),
-        "\u{1b}[1;5D": Key(.left, modifiers: .ctrl),
-        "\u{1b}[Oa":   Key(.up, modifiers: [.ctrl, .alt]),    // urxvt
-        "\u{1b}[Ob":   Key(.down, modifiers: [.ctrl, .alt]),  // urxvt
+        "\u{1b}[1;5D": Key(.left,  modifiers: .ctrl),
+
+        "\u{1b}[Oa":   Key(.up,    modifiers: [.ctrl, .alt]),    // urxvt
+        "\u{1b}[Ob":   Key(.down,  modifiers: [.ctrl, .alt]),  // urxvt
         "\u{1b}[Oc":   Key(.right, modifiers: [.ctrl, .alt]), // urxvt
-        "\u{1b}[Od":   Key(.left, modifiers: [.ctrl, .alt]),  // urxvt
-        "\u{1b}[1;6A": Key(.up, modifiers: [.ctrl, .shift]),
-        "\u{1b}[1;6B": Key(.down, modifiers: [.ctrl, .shift]),
+        "\u{1b}[Od":   Key(.left,  modifiers: [.ctrl, .alt]),  // urxvt
+
+        "\u{1b}[1;6A": Key(.up,    modifiers: [.ctrl, .shift]),
+        "\u{1b}[1;6B": Key(.down,  modifiers: [.ctrl, .shift]),
         "\u{1b}[1;6C": Key(.right, modifiers: [.ctrl, .shift]),
-        "\u{1b}[1;6D": Key(.left, modifiers: [.ctrl, .shift]),
-        "\u{1b}[1;7A": Key(.up, modifiers: [.ctrl, .alt]),
-        "\u{1b}[1;7B": Key(.down, modifiers: [.ctrl, .alt]),
+        "\u{1b}[1;6D": Key(.left,  modifiers: [.ctrl, .shift]),
+
+        "\u{1b}[1;7A": Key(.up,    modifiers: [.ctrl, .alt]),
+        "\u{1b}[1;7B": Key(.down,  modifiers: [.ctrl, .alt]),
         "\u{1b}[1;7C": Key(.right, modifiers: [.ctrl, .alt]),
-        "\u{1b}[1;7D": Key(.left, modifiers: [.ctrl, .alt]),
-        "\u{1b}[1;8A": Key(.up, modifiers: [.ctrl, .shift, .alt]),
-        "\u{1b}[1;8B": Key(.down, modifiers: [.ctrl, .shift, .alt]),
+        "\u{1b}[1;7D": Key(.left,  modifiers: [.ctrl, .alt]),
+
+        "\u{1b}[1;8A": Key(.up,    modifiers: [.ctrl, .shift, .alt]),
+        "\u{1b}[1;8B": Key(.down,  modifiers: [.ctrl, .shift, .alt]),
         "\u{1b}[1;8C": Key(.right, modifiers: [.ctrl, .shift, .alt]),
-        "\u{1b}[1;8D": Key(.left, modifiers: [.ctrl, .shift, .alt]),
+        "\u{1b}[1;8D": Key(.left,  modifiers: [.ctrl, .shift, .alt]),
 
         // Miscellaneous keys
-        "\u{1b}[Z": Key(.tab, modifiers: .shift),
+        "\u{1b}[Z":    Key(.tab, modifiers: .shift),
 
         "\u{1b}[2~":   Key(.insert),
         "\u{1b}[3;2~": Key(.insert),                   // differ
@@ -349,6 +455,7 @@ public actor KeyParser: AsyncSequence {
     }()
 
     private func parse(continuation: AsyncThrowingStream<Key, Error>.Continuation) async throws {
+
         func timeout(yielding: String) -> Task<Void, Error> {
             return Task {
                 try await Task.sleep(for: .milliseconds(30))
@@ -361,6 +468,7 @@ public actor KeyParser: AsyncSequence {
         }
 
         func yield(character: Unicode.Scalar) {
+            // log("yield: \(Key(.char(character)))")
             continuation.yield(Key(.char(character)))
         }
 
@@ -368,12 +476,15 @@ public actor KeyParser: AsyncSequence {
             for char in string.unicodeScalars { yield(character: char) }
         }
 
-        for try await character in bytes.unicodeScalars {
+        for try await character in unicodeScalars {
             switch (state, character) {
-            case (.initial, "\u{1b}" as Unicode.Scalar):
+            case (.initial, "\u{1b}"):
                 // We received an escape (^[) character, we need to wait a small amount of time for the next character to come in
                 // before we emit an escape key that was received.
-                state = .escapeSequence(String(character), timeout(yielding: String(character)))
+                state = .escapeSequence(
+                    String(character),
+                    timeout(yielding: String(character))
+                )
 
             case (.initial, _):
                 yield(character: character)

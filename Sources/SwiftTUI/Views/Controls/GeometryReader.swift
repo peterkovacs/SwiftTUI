@@ -14,19 +14,15 @@ public struct GeometryReader<Content: View>: View, PrimitiveView {
 
     func buildNode(_ node: Node) {
         setupStateProperties(node: node)
-        observe(node: node) {
-            node.addNode(at: 0, Node(view: VStack(content: content(geometry))))
-            node.control = GeometryReaderControl(geometry: _geometry)
-            node.control!.addSubview(node.children[0].control(at: 0), at: 0)
-        }
+        node.addNode(at: 0, Node(observing: VStack(content: content(geometry))))
+        node.control = GeometryReaderControl(geometry: _geometry)
+        node.control!.addSubview(node.children[0].control(at: 0), at: 0)
     }
 
     func updateNode(_ node: Node) {
         setupStateProperties(node: node)
         node.view = self
-        observe(node: node) {
-            node.children[0].update(using: VStack(content: content(geometry)))
-        }
+        node.children[0].update(using: VStack(content: content(geometry)))
     }
 
     @MainActor

@@ -9,6 +9,10 @@ public struct ViewBuilder {
 
     public static func buildIf<V: View>(_ content: V)  -> V  { content }
 
+    public static func buildOptional<V: View>(_ content: V?) -> OptionalView<V> {
+        OptionalView(content: content)
+    }
+
     public static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent) -> _ConditionalView<TrueContent, FalseContent> {
         _ConditionalView(content: .a(first))
     }

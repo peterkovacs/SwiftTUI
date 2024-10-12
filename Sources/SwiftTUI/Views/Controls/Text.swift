@@ -22,34 +22,30 @@ public struct Text: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.control = TextControl(
-                text: text,
-                attributedText: attributedText,
-                foregroundColor: foregroundColor,
-                bold: bold,
-                italic: italic,
-                underline: underline,
-                strikethrough: strikethrough
-            )
-        }
+        setupEnvironmentProperties(node: node)
+        node.control = TextControl(
+            text: text,
+            attributedText: attributedText,
+            foregroundColor: foregroundColor,
+            bold: bold,
+            italic: italic,
+            underline: underline,
+            strikethrough: strikethrough
+        )
     }
     
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.view = self
-            let control = node.control as! TextControl
-            control.text = text
-            control.attributedText = attributedText
-            control.foregroundColor = foregroundColor
-            control.bold = bold
-            control.italic = italic
-            control.underline = underline
-            control.strikethrough = strikethrough
-            control.layer.invalidate()
-        }
+        setupEnvironmentProperties(node: node)
+        node.view = self
+        let control = node.control as! TextControl
+        control.text = text
+        control.attributedText = attributedText
+        control.foregroundColor = foregroundColor
+        control.bold = bold
+        control.italic = italic
+        control.underline = underline
+        control.strikethrough = strikethrough
+        control.layer.invalidate()
     }
     
     private class TextControl: Control {

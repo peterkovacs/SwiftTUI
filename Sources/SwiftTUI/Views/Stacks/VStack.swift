@@ -27,21 +27,17 @@ public struct VStack<Content: View>: View, PrimitiveView, LayoutRootView {
     }
     
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            node.addNode(at: 0, Node(view: content.view))
-            node.control = VStackControl(alignment: alignment, spacing: spacing ?? 0)
-            node.environment = { $0.stackOrientation = .vertical }
-        }
+        node.addNode(at: 0, Node(observing: content.view))
+        node.control = VStackControl(alignment: alignment, spacing: spacing ?? 0)
+        node.environment = { $0.stackOrientation = .vertical }
     }
     
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            node.view = self
-            node.children[0].update(using: content.view)
-            let control = node.control as! VStackControl
-            control.alignment = alignment
-            control.spacing = spacing ?? 0
-        }
+        node.view = self
+        node.children[0].update(using: content.view)
+        let control = node.control as! VStackControl
+        control.alignment = alignment
+        control.spacing = spacing ?? 0
     }
     
     func insertControl(at index: Int, node: Node) {

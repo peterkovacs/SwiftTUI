@@ -4,20 +4,16 @@ extension Color: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            node.control = ColorControl(color: self)
-        }
+        node.control = ColorControl(color: self)
     }
     
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            let last = node.view as! Self
-            node.view = self
-            if self != last {
-                let control = node.control as! ColorControl
-                control.color = self
-                control.layer.invalidate()
-            }
+        let last = node.view as! Self
+        node.view = self
+        if self != last {
+            let control = node.control as! ColorControl
+            control.color = self
+            control.layer.invalidate()
         }
     }
     

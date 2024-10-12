@@ -5,7 +5,7 @@ import Foundation
 @MainActor
 class Control: LayerDrawing {
     private(set) var children: [Control] = []
-    private(set) var parent: Control?
+    weak private(set) var parent: Control?
 
     private var index: Int = 0
 

@@ -1,6 +1,7 @@
 import XCTest
 @testable import SwiftTUI
 
+@MainActor
 final class ViewBuildTests: XCTestCase {
     func test_VStack_TupleView2() throws {
         struct MyView: View {

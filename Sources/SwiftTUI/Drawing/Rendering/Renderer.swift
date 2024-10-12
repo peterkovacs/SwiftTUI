@@ -12,12 +12,58 @@ class Renderer {
 
     /// The current cursor position, which might need to be updated before
     /// printing.
-    private var currentPosition: Position = .zero
+    private var currentPosition: Position = .zero {
+        didSet {
+            if oldValue != currentPosition {
+                write(EscapeSequence.moveTo(currentPosition))
+            }
+        }
+    }
 
-    private var currentForegroundColor: Color? = nil
-    private var currentBackgroundColor: Color? = nil
+    private var currentForegroundColor: Color? = nil {
+        didSet {
+            if oldValue != currentForegroundColor {
+                write((currentForegroundColor ?? .default).foregroundEscapeSequence)
+            }
+        }
+    }
+    private var currentBackgroundColor: Color? = nil {
+        didSet {
+            if oldValue != currentBackgroundColor {
+                write((currentBackgroundColor ?? .default).backgroundEscapeSequence)
+            }
+        }
+    }
 
-    private var currentAttributes = CellAttributes()
+    private var currentAttributes = CellAttributes() {
+        didSet {
+            if oldValue.bold != currentAttributes.bold {
+                write(currentAttributes.bold
+                      ? EscapeSequence.enableBold
+                      : EscapeSequence.disableBold)
+            }
+            if oldValue.italic != currentAttributes.italic {
+                write(currentAttributes.italic
+                      ? EscapeSequence.enableItalic
+                      : EscapeSequence.disableItalic)
+            }
+            if oldValue.underline != currentAttributes.underline {
+                write(currentAttributes.underline
+                      ? EscapeSequence.enableUnderline
+                      : EscapeSequence.disableUnderline)
+            }
+            if oldValue.strikethrough != currentAttributes.strikethrough {
+                write(currentAttributes.strikethrough
+                      ? EscapeSequence.enableStrikethrough
+                      : EscapeSequence.disableStrikethrough)
+            }
+            if oldValue.inverted != currentAttributes.inverted {
+                write(currentAttributes.inverted
+                      ? EscapeSequence.enableInverted
+                      : EscapeSequence.disableInverted)
+            }
+        }
+    }
 
     weak var application: Application?
 
@@ -63,20 +109,12 @@ class Renderer {
         }
         if cache[position.line.intValue][position.column.intValue] != cell {
             cache[position.line.intValue][position.column.intValue] = cell
-            if self.currentPosition != position {
-                write(EscapeSequence.moveTo(position))
-                self.currentPosition = position
-            }
-            if self.currentForegroundColor != cell.foregroundColor {
-                write(cell.foregroundColor.foregroundEscapeSequence)
-                self.currentForegroundColor = cell.foregroundColor
-            }
-            let backgroundColor = cell.backgroundColor ?? .default
-            if self.currentBackgroundColor != backgroundColor {
-                write(backgroundColor.backgroundEscapeSequence)
-                self.currentBackgroundColor = backgroundColor
-            }
-            self.updateAttributes(cell.attributes)
+
+            self.currentPosition = position
+            self.currentForegroundColor = cell.foregroundColor
+            self.currentBackgroundColor = cell.backgroundColor
+            self.currentAttributes = cell.attributes
+
             write(String(cell.char))
             self.currentPosition.column += 1
         }
@@ -88,31 +126,6 @@ class Renderer {
         write(EscapeSequence.moveTo(currentPosition))
         write(EscapeSequence.hideCursor)
     }
-
-    private func updateAttributes(_ attributes: CellAttributes) {
-        if currentAttributes.bold != attributes.bold {
-            if attributes.bold { write(EscapeSequence.enableBold) }
-            else { write(EscapeSequence.disableBold) }
-        }
-        if currentAttributes.italic != attributes.italic {
-            if attributes.italic { write(EscapeSequence.enableItalic) }
-            else { write(EscapeSequence.disableItalic) }
-        }
-        if currentAttributes.underline != attributes.underline {
-            if attributes.underline { write(EscapeSequence.enableUnderline) }
-            else { write(EscapeSequence.disableUnderline) }
-        }
-        if currentAttributes.strikethrough != attributes.strikethrough {
-            if attributes.strikethrough { write(EscapeSequence.enableStrikethrough) }
-            else { write(EscapeSequence.disableStrikethrough) }
-        }
-        if currentAttributes.inverted != attributes.inverted {
-            if attributes.inverted { write(EscapeSequence.enableInverted) }
-            else { write(EscapeSequence.disableInverted) }
-        }
-        currentAttributes = attributes
-    }
-
 }
 
 internal func write(_ str: String) {

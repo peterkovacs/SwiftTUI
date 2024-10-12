@@ -84,25 +84,23 @@ private struct Border<Content: View>: View, PrimitiveView, ModifierView {
     static var size: Int? { Content.size }
     
     func buildNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.controls = WeakSet<Control>()
-            node.addNode(at: 0, Node(view: content.view))
-        }
+        setupEnvironmentProperties(node: node)
+        node.controls = WeakSet<Control>()
+        node.addNode(at: 0, Node(observing: content.view))
     }
     
     func updateNode(_ node: Node) {
-        observe(node: node) {
-            setupEnvironmentProperties(node: node)
-            node.view = self
-            node.children[0].update(using: content.view)
-            for control in node.controls?.values ?? [] {
-                let control = control as! BorderControl
-                if control.color != color || control.style != style {
-                    control.color = color ?? foregroundColor
-                    control.style = style
-                    control.layer.invalidate()
-                }
+
+        setupEnvironmentProperties(node: node)
+        node.view = self
+        node.children[0].update(using: content.view)
+
+        for control in node.controls?.values ?? [] {
+            let control = control as! BorderControl
+            if control.color != color || control.style != style {
+                control.color = color ?? foregroundColor
+                control.style = style
+                control.layer.invalidate()
             }
         }
     }
