@@ -3,28 +3,39 @@ import Foundation
 import AppKit
 #endif
 
+struct RootView<T: View>: View {
+    let rootView: () -> T
+    let exit: @Sendable () -> Void
+
+    var body: some View {
+        VStack {
+            rootView()
+        }
+        .environment(\.exit, exit)
+    }
+}
+
 @MainActor
 public class Application {
-    private let node: Node
-    private let window: Window
-    private let control: Control
-    private let renderer: Renderer
+    let node: Node
+    let window: Window
+    let control: Control
+    let renderer: Renderer
 
     private var arrowKeyParser = KeyParser()
 
     private var invalidatedNodes: [Node] = []
     private var updateScheduled = false
 
-    public init<I: View>(rootView: I) {
-        node = Node(
-            view: VStack(
-                content: rootView
-                    .environment(\.exit, Application.stop)
-            ).view
-        )
+    public init<I: View>(
+        rootView: @escaping @autoclosure () -> I,
+        fileHandle: FileHandle = .standardOutput
+    ) {
+        self.node = Node(observing: ComposedView(view: RootView(rootView: rootView, exit: Application.stop)))
         node.build()
 
-        control = node.control!
+        // Implicit top-level VStackControl
+        control = node.control(at: 0)
 
         window = Window()
         window.addControl(control)
@@ -32,7 +43,7 @@ public class Application {
         window.firstResponder = control.firstSelectableElement
         window.firstResponder?.becomeFirstResponder()
 
-        renderer = Renderer(layer: window.layer)
+        renderer = Renderer(layer: window.layer, fileHandle: fileHandle)
         window.layer.renderer = renderer
 
         node.application = self
@@ -63,7 +74,7 @@ public class Application {
         return stream.stream
     }
 
-    private func setup() {
+    func setup() {
         setInputMode()
         updateWindowSize()
         control.layout(size: window.layer.frame.size)
@@ -202,9 +213,11 @@ public class Application {
         }
     }
 
-    private func updateWindowSize() {
+    func updateWindowSize() {
         var size = winsize()
-        guard ioctl(STDOUT_FILENO, UInt(TIOCGWINSZ), &size) == 0,
+        guard ioctl(
+            renderer.fileHandle.fileDescriptor, UInt(TIOCGWINSZ), &size
+        ) == 0,
               size.ws_col > 0, size.ws_row > 0 else {
             assertionFailure("Could not get window size")
             return

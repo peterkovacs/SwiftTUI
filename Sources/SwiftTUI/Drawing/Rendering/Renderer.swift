@@ -2,6 +2,7 @@ import Foundation
 
 @MainActor
 class Renderer {
+    var fileHandle: FileHandle
     var layer: Layer
 
     /// Even though we only redraw invalidated parts of the screen, terminal
@@ -67,8 +68,9 @@ class Renderer {
 
     weak var application: Application?
 
-    init(layer: Layer) {
+    init(layer: Layer, fileHandle: FileHandle = .standardOutput) {
         self.layer = layer
+        self.fileHandle = fileHandle
         setCache()
         setup()
     }
@@ -126,8 +128,12 @@ class Renderer {
         write(EscapeSequence.moveTo(currentPosition))
         write(EscapeSequence.hideCursor)
     }
-}
 
-internal func write(_ str: String) {
-    str.withCString { _ = write(STDOUT_FILENO, $0, strlen($0)) }
+
+    func write(_ str: String) {
+        let cStr = str.utf8CString
+        cStr.withUnsafeBufferPointer { ptr in
+            _ = unistd.write(fileHandle.fileDescriptor, ptr.baseAddress, ptr.count)
+        }
+    }
 }

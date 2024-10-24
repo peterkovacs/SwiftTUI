@@ -7,7 +7,7 @@ extension View {
                 // Note: this is not how SwiftUI handles state.
                 // This will break if you initialize a View, and then use it
                 // multiple times, because we would be editing the same View.
-                stateValue.valueReference.node = node
+                stateValue.valueReference.state = node.state
                 stateValue.valueReference.label = label
             }
         }

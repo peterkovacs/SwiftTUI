@@ -20,7 +20,17 @@ import Combine
 final class Node {
     var view: (any GenericView)!
 
-    var state: [String: Any] = [:]
+    final class StateStorage {
+        var state: [String: Any] = [:]
+        weak var node: Node?
+
+        init(state: [String : Any] = [:], node: Node) {
+            self.state = state
+            self.node = node
+        }
+    }
+
+    var state: StateStorage!
     var environment: ((inout EnvironmentValues) -> Void)?
 
     var control: Control?
@@ -37,6 +47,7 @@ final class Node {
     private(set) var built = false
 
     init(observing: @autoclosure () -> GenericView) {
+        self.state = .init(node: self)
         self.view = withObservationTracking(observing) { [weak self] in
             guard let self else { return }
 

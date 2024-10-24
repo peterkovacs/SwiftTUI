@@ -44,7 +44,7 @@ final class ViewBuildTests: XCTestCase {
     }
 
     private func buildView<V: View>(_ view: V) throws -> Control {
-        let node = Node(view: VStack(content: view).view)
+        let node = Node(observing: VStack(content: view).view)
         node.build()
         return try XCTUnwrap(node.control?.children.first)
     }

@@ -6,10 +6,12 @@ public struct State<T>: AnyState {
     public let initialValue: T
 
     public init(initialValue: T) {
+        print("State.init")
         self.initialValue = initialValue
     }
 
     public init(wrappedValue: T) {
+        print("State.init")
         self.initialValue = wrappedValue
     }
 
@@ -19,7 +21,7 @@ public struct State<T>: AnyState {
 
     public var wrappedValue: T {
         get {
-            guard let node = valueReference.node,
+            guard let node = valueReference.state,
                   let label = valueReference.label
             else {
                 assertionFailure("Attempting to access @State variable before view is instantiated")
@@ -31,14 +33,14 @@ public struct State<T>: AnyState {
             return initialValue
         }
         nonmutating set {
-            guard let node = valueReference.node,
+            guard let state = valueReference.state,
                   let label = valueReference.label
             else {
                 assertionFailure("Attempting to modify @State variable before view is instantiated")
                 return
             }
-            node.state[label] = newValue
-            node.root.application?.invalidateNode(node)
+            state.state[label] = newValue
+            state.node?.invalidate()
         }
     }
 
@@ -59,6 +61,6 @@ protocol AnyState {
 
 @MainActor
 class StateReference {
-    weak var node: Node?
+    var state: Node.StateStorage?
     var label: String?
 }
