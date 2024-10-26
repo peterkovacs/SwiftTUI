@@ -6,12 +6,10 @@ public struct State<T>: AnyState {
     public let initialValue: T
 
     public init(initialValue: T) {
-        print("State.init")
         self.initialValue = initialValue
     }
 
     public init(wrappedValue: T) {
-        print("State.init")
         self.initialValue = wrappedValue
     }
 

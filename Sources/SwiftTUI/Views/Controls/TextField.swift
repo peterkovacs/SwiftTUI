@@ -80,7 +80,6 @@ public struct TextField: View, PrimitiveView {
         private func word(after: String.Index) -> String.Index {
             if cursorPosition != text.endIndex {
                 let next = text.index(after: cursorPosition)
-                let substring = text[next...]
 
                 guard let endOfWord = text[next...].firstIndex(where: { !$0.isNumber && !$0.isLetter })
                 else { return text.endIndex }

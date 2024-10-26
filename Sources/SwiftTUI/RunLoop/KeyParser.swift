@@ -158,7 +158,7 @@ public actor KeyParser: AsyncSequence {
 
     // MARK: Parse Input
     private var bytes: AsyncThrowingStream<UInt8, Error> {
-        AsyncThrowingStream<UInt8, Error> { continuation in
+        AsyncThrowingStream<UInt8, Error> { [fileHandle] continuation in
             fileHandle.readabilityHandler = { (fileHandle) in
                 for byte in fileHandle.availableData {
                     continuation.yield(byte)
@@ -166,9 +166,7 @@ public actor KeyParser: AsyncSequence {
             }
 
             continuation.onTermination = { termination in
-                Task {
-                    await self.fileHandle.readabilityHandler = nil
-                }
+                fileHandle.readabilityHandler = nil
             }
         }
     }

@@ -37,20 +37,19 @@ struct TaskTests {
 
     @Test func taskCancels() async throws {
         struct MyView: View {
-            @State var count = 0
+            @State var visible = true
             var called: () -> Void
 
             var body: some View {
-                if count < 3 {
-                    Text("Hello \(count)")
+                if visible {
+                    Text("Hello")
                         .task {
+                            visible = false
+
                             do {
-                                while !Task.isCancelled {
-                                    count += 1
-                                    try await Task.sleep(
-                                        for: .milliseconds(10)
+                                try await Task.sleep(
+                                        for: .seconds(1)
                                     )
-                                }
                             } catch is CancellationError {
                                 called()
                             } catch {
@@ -68,9 +67,27 @@ struct TaskTests {
             }
         )
 
+        #expect(node.node.treeDescription == """
+            → ComposedView<RootView<MyView>>
+              → SetEnvironment<VStack<MyView>, @MainActor @Sendable () -> ()>
+                → VStack<MyView>
+                  → ComposedView<MyView>
+                    → OptionalView<TaskView<Text>>
+                      → TaskView<Text>
+                        → Text
+            """)
+
         #expect(called == false)
         try await Task.sleep(for: .milliseconds(200))
         #expect(called == true)
+
+        #expect(node.node.treeDescription == """
+            → ComposedView<RootView<MyView>>
+              → SetEnvironment<VStack<MyView>, @MainActor @Sendable () -> ()>
+                → VStack<MyView>
+                  → ComposedView<MyView>
+                    → OptionalView<TaskView<Text>>
+            """)
 
         _ = node
     }

@@ -2,6 +2,7 @@ import Testing
 import Foundation
 @testable import SwiftTUI
 
+@MainActor
 @Suite("KeyParser")
 struct KeyParserTests {
     @Test(
@@ -49,7 +50,7 @@ struct KeyParserTests {
             ("\u{1b}[6~", Key(.pageDown)),
         ]
     )
-    @MainActor func parsesEscapeSequences(input: String, expectation: Key) async throws {
+    func parsesEscapeSequences(input: String, expectation: Key) async throws {
         let pipe = Pipe()
         let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
         var iterator = parser.makeAsyncIterator()
@@ -64,7 +65,7 @@ struct KeyParserTests {
         #expect(key == expectation)
     }
 
-    @Test @MainActor func parsesEscape() async throws {
+    @Test func parsesEscape() async throws {
         let pipe = Pipe()
         let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
         var iterator = parser.makeAsyncIterator()
@@ -91,4 +92,23 @@ struct KeyParserTests {
         }
 
     }
+
+    @Test func parsesUnicode() async throws {
+        let pipe = Pipe()
+        let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
+        var iterator = parser.makeAsyncIterator()
+
+        Task {
+            try pipe.fileHandleForWriting.write(
+                contentsOf: "\u{1f468}".data(using: .utf8)!
+            )
+        }
+
+        let key = try await iterator.next()
+        #expect(key == .init(.char("\u{1f468}")))
+
+    }
 }
+
+// Unicode: U+1F468, UTF-8: F0 9F 91 A8
+// Unicode: U+1F469, UTF-8: F0 9F 91 A9

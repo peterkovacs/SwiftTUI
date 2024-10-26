@@ -8,14 +8,20 @@ extension Node {
     ///     → Text
     /// ```
     func logTree() {
-        logTree(level: 0)
+        log(treeDescription)
     }
 
-    private func logTree(level: Int) {
+    var treeDescription: String {
+        treeDescription(level: 0)
+    }
+
+    private func treeDescription(level: Int) -> String {
+        var str = ""
         let indent = Array(repeating: " ", count: level * 2).joined()
-        log("\(indent)→ \(type(of: self.view))")
+        str += "\(indent)→ \(type(of: self.view!))"
         for child in children {
-            child.logTree(level: level + 1)
+            str += "\n" + child.treeDescription(level: level + 1)
         }
+        return str
     }
 }

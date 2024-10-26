@@ -71,11 +71,6 @@ final class Node {
     }
 
     func invalidate() {
-        if parent == nil {
-            application?.invalidateNode(self)
-        }
-
-        log("invalidate: \(view.debugDescription)")
         root.application?.invalidateNode(self)
     }
 
