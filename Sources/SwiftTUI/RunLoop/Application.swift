@@ -54,6 +54,7 @@ public class Application {
 
         // Implicit top-level VStackControl
         control = node.control(at: 0)
+        node.mergePreferences()
 
         window = Window()
         window.addControl(control)
@@ -92,6 +93,7 @@ public class Application {
 
     func setup() {
         updateWindowSize()
+        node.mergePreferences()
         control.layout(size: window.layer.frame.size)
         renderer.draw()
     }
@@ -136,7 +138,7 @@ public class Application {
                     if let next = window.firstResponder?.selectableElement(leftOf: 0) {
                         becomeResponder(next)
                     }
-                case Key(.char("d"), modifiers: .ctrl), Key(.escape):
+                case Key(.char("d"), modifiers: .ctrl):
                     exit.continuation.finish()
                 default:
                     break
@@ -178,6 +180,7 @@ public class Application {
             node.update(using: node.view)
         }
         invalidatedNodes = []
+        node.mergePreferences()
 
         control.layout(size: window.layer.frame.size)
         renderer.update()

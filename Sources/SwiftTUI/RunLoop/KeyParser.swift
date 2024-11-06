@@ -77,6 +77,16 @@ public struct Key: Sendable, Equatable {
         }
     }
 
+    var isControl: Bool {
+        switch key {
+        case .nul, .soh, .stx, .etx, .eot, .enq, .ack, .bel, .bs, .tab, .newLine,
+             .vt, .np, .enter, .so, .si, .dle, .dc1, .dc2, .dc3, .dc4, .nak,
+             .syn, .etb, .can, .em, .sub, .fs, .gs, .rs, .us, .delete:
+            return true
+        default:
+            return false
+        }
+    }
 
     private mutating func normalize() {
         switch (key, modifiers) {

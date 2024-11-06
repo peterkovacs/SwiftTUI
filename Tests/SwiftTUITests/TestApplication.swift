@@ -15,3 +15,17 @@ class TestApplication: Application {
     }
 
 }
+
+@MainActor
+func drawView<V: View>(_ view: V) throws -> Application {
+    let application = TestApplication(
+        rootView: view,
+        fileHandle: try .init(
+            forWritingTo: .init(filePath: "/dev/null")
+        )
+    )
+
+    application.setup()
+
+    return application
+}

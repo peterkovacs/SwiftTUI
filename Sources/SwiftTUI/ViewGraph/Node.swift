@@ -32,6 +32,9 @@ final class Node {
 
     var state: StateStorage!
     var environment: ((inout EnvironmentValues) -> Void)?
+    var preference: [
+        AnyHashable: (any PreferenceKey.Type, any _PreferenceContainer)
+    ]
 
     var control: Control?
     weak var application: Application?
@@ -47,6 +50,7 @@ final class Node {
     private(set) var built = false
 
     init(observing: @autoclosure () -> GenericView) {
+        self.preference = [:]
         self.state = .init(node: self)
         self.view = withObservationTracking(observing) { [weak self] in
             guard let self else { return }
@@ -169,4 +173,77 @@ final class Node {
         }
         parent?.removeControl(at: offset + self.offset)
     }
+
+    // MARK: Preference Merge
+    func mergePreferences() {
+        children.forEach { $0.mergePreferences() }
+
+        // any preference set by this node should override any preference set by child nodes.
+        // child nodes should start with the `defaultValue` and then merge sibling children into a single value.
+        var preference = children.reduce(into: [:] as [AnyHashable: (any PreferenceKey.Type, any _PreferenceContainer)]) { partialResult, node in
+            @MainActor func merge<T: PreferenceKey>(
+                key: T.Type,
+                container newValue: Any
+            ) {
+                // container is not the one we want to keep.
+                // we want to keep the one that is in `partialResult`.
+                let newValue = newValue as! PreferenceContainer<T>
+                let (key, existingValue) = partialResult[
+                    newValue.preferenceKey,
+                    default: (newValue.type, PreferenceContainer(type: newValue.type))
+                ] as! (T.Type,  PreferenceContainer<T>)
+
+                var value = existingValue.value
+                T.reduce(value: &value) {
+                    newValue.value
+                }
+
+                existingValue.value = value
+                partialResult[newValue.preferenceKey] = (key, existingValue)
+            }
+
+            node.preference.forEach { (key, value) in
+                merge(
+                    key: value.0,
+                    container: value.1
+                )
+            }
+        }
+
+        if let view = view as? any PreferenceView {
+            func unwrap<T: PreferenceView>(view: T) -> (any PreferenceKey.Type, any _PreferenceContainer){
+                let container = preference[
+                    view.preferenceKey,
+                    default: (
+                        view.type,
+                        PreferenceContainer(type: view.type)
+                    )
+                ] as! (T.Preference.Type, PreferenceContainer<T.Preference>)
+
+                container.1.value = view.value
+                return container
+            }
+
+            preference[view.preferenceKey] = unwrap(view: view)
+        }
+
+        preference.forEach { (key, value) in
+            @MainActor func unwrap<T: PreferenceKey>(
+                key: T.Type,
+                container newValue: Any
+            ) {
+                let newValue = newValue as! PreferenceContainer<T>
+                let (key, existingValue) = self.preference[
+                    newValue.preferenceKey,
+                    default: (newValue.type, PreferenceContainer(type: newValue.type))
+                ] as! (T.Type,  PreferenceContainer<T>)
+
+                existingValue.value = newValue.value
+                self.preference[newValue.preferenceKey] = (key, existingValue)
+            }
+
+            unwrap(key: value.0, container: value.1)
+        }
+    }
+
 }

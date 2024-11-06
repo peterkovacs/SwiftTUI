@@ -193,8 +193,7 @@ public struct TextField: View, PrimitiveView {
                 }
                 return true
 
-
-            case _ where key.modifiers.isEmpty:
+            case _ where key.modifiers.isEmpty && !key.isControl:
 
                 if case .char(let value) = key.key {
                     text.insert(.init(value), at: cursorPosition)
