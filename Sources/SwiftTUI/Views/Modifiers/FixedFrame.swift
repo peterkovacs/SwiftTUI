@@ -24,7 +24,7 @@ private struct FixedFrame<Content: View>: View, PrimitiveView, ModifierView {
 
     func buildNode(_ node: Node) {
         node.controls = WeakSet<Control>()
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
     }
 
     func updateNode(_ node: Node) {

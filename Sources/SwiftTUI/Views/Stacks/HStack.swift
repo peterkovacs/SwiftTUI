@@ -21,7 +21,7 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
     }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
         node.control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
         node.environment = { $0.stackOrientation = .horizontal }
     }

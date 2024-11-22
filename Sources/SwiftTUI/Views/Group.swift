@@ -10,7 +10,7 @@ public struct Group<Content: View>: View, PrimitiveView {
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
     }
 
     func updateNode(_ node: Node) {

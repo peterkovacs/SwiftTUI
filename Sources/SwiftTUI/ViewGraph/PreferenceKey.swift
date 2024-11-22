@@ -89,7 +89,7 @@ private struct _PreferenceView<Content: View, P: PreferenceKey>: View, Primitive
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
     }
 
     func updateNode(_ node: Node) {
@@ -142,7 +142,7 @@ private struct _PreferenceChangeView<Content: View, P: PreferenceKey>: View, Pri
 
         observe(node: node)
 
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
     }
 
     func updateNode(_ node: Node) {

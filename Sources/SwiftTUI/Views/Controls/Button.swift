@@ -20,7 +20,7 @@ public struct Button<Label: View>: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(observing: label.view))
+        node.addNode(at: 0, Node(node: label.view))
         let control = ButtonControl(action: action, hover: hover)
         control.label = node.children[0].control(at: 0)
         control.addSubview(control.label, at: 0)

@@ -43,35 +43,40 @@ final class Node {
     var controls: WeakSet<Control>?
 
     private(set) weak var parent: Node?
+
     private(set) var children: [Node] = []
 
     private(set) var index: Int = 0
 
     private(set) var built = false
 
-    init(observing: @autoclosure () -> GenericView) {
+    init(node: GenericView) {
         self.preference = [:]
         self.state = .init(node: self)
-        self.view = withObservationTracking(observing) { [weak self] in
-            guard let self else { return }
-
-            MainActor.assumeIsolated {
-                invalidate()
-            }
-        }
+        self.view = node
+//        withObservationTracking(observing) { [weak self] in
+//            guard let self else { return }
+//
+//            MainActor.assumeIsolated {
+//                // Here's the problem -- which node is it that we want to invalidate?
+//                // We need to search up the tree to see which node is the one that contains the @State or @Binding holding the Observable.
+//                // Or, we need to stop building nodes lazily, and instead build it on demand and set this callback in the `ComposedView`, but only if there are @State or @Binding attributes.
+//                (parent ?? self).invalidate()
+//            }
+//        }
     }
 
-    func update(using observing: @autoclosure () -> GenericView) {
+    func update(using observing: GenericView) {
         build()
 
-        let view = withObservationTracking(observing) { [weak self] in
-            guard let self else { return }
-            MainActor.assumeIsolated {
-                invalidate()
-            }
-        }
-        view.updateNode(self)
-        self.view = view
+//        let view = withObservationTracking(observing) { [weak self] in
+//            guard let self else { return }
+//            MainActor.assumeIsolated {
+//                (parent ?? self).invalidate()
+//            }
+//        }
+        observing.updateNode(self)
+        self.view = observing
     }
 
     func invalidate() {

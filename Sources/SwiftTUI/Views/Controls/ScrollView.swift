@@ -12,7 +12,7 @@ public struct ScrollView<Content: View>: View, PrimitiveView {
     static var size: Int? { 1 }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(observing: content.view))
+        node.addNode(at: 0, Node(node: content.view))
         let control = ScrollControl()
         control.contentControl = node.children[0].control(at: 0)
         control.addSubview(control.contentControl, at: 0)

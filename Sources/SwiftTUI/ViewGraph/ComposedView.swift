@@ -8,7 +8,7 @@ struct ComposedView<I: View>: GenericView {
     func buildNode(_ node: Node) {
         view.setupStateProperties(node: node)
         view.setupEnvironmentProperties(node: node)
-        node.addNode(at: 0, Node(observing: view.body.view))
+        node.addNode(at: 0, Node(node: view.body.view))
     }
     
     func updateNode(_ node: Node) {

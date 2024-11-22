@@ -23,7 +23,7 @@ public struct ForEach<Data, ID, Content>: View, PrimitiveView where Data : Rando
     func buildNode(_ node: Node) {
         let views: [Content] = data.map(content)
         for (i, view) in views.enumerated() {
-            node.addNode(at: i, Node(observing: view.view))
+            node.addNode(at: i, Node(node: view.view))
         }
     }
 
@@ -46,7 +46,7 @@ public struct ForEach<Data, ID, Content>: View, PrimitiveView where Data : Rando
                 continue
             }
 
-            node.addNode(at: offset, Node(observing: content(element).view))
+            node.addNode(at: offset, Node(node: content(element).view))
         }
     }
 }

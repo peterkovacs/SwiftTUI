@@ -40,7 +40,7 @@ public class Application {
         self.exit = AsyncStream.makeStream()
 
         self.node = Node(
-            observing: ComposedView(
+            node: ComposedView(
                 view: RootView(
                     rootView: rootView,
                     exit: { [continuation = exit.continuation] in

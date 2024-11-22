@@ -10,7 +10,7 @@ public struct OptionalView<Wrapped: View>: View, PrimitiveView, GenericView {
 
     func buildNode(_ node: Node) {
         if let content {
-            node.addNode(at: 0, Node(observing: content.view))
+            node.addNode(at: 0, Node(node: content.view))
         }
     }
 
@@ -21,7 +21,7 @@ public struct OptionalView<Wrapped: View>: View, PrimitiveView, GenericView {
         case (.none, .none):
             break
         case (.none, .some(let newValue)):
-            node.addNode(at: 0, Node(observing: newValue.view))
+            node.addNode(at: 0, Node(node: newValue.view))
         case (.some, .none):
             node.removeNode(at: 0)
         case (.some, .some(let newValue)):
