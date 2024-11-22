@@ -33,18 +33,20 @@ public struct ForEach<Data, ID, Content>: View, PrimitiveView where Data : Rando
         let diff = data.difference(from: last.data, by: { $0[keyPath: id] == $1[keyPath: last.id] })
         var needsUpdate = Set<Int>(0 ..< data.count)
 
-        for change in diff {
-            switch change {
-            case .remove(let offset, _, _):
-                node.removeNode(at: offset)
-            case .insert(let offset, let element, _):
-                node.addNode(at: offset, Node(observing: content(element).view ))
-                needsUpdate.remove(offset)
+        for removal in diff.removals {
+            guard case .remove(let offset, _, _) = removal else {
+                continue
             }
 
-            for i in needsUpdate {
-                node.children[i].update(using: content(data[data.index(data.startIndex, offsetBy:i)]).view )
+            node.removeNode(at: offset)
+        }
+
+        for insert in diff.insertions {
+            guard case .insert(let offset, let element, _) = insert else {
+                continue
             }
+
+            node.addNode(at: offset, Node(observing: content(element).view))
         }
     }
 }

@@ -22,24 +22,33 @@ class Control: LayerDrawing {
         for i in index ..< children.count {
             children[i].index = i
         }
-        if let window = root.window, window.firstResponder == nil {
-            if let responder = view.firstSelectableElement {
-                window.firstResponder = responder
-                responder.becomeFirstResponder()
-            }
+
+        if  let window = root.window,
+            window.firstResponder == nil,
+            let responder = view.firstSelectableElement
+        {
+            window.firstResponder = responder
+            responder.becomeFirstResponder()
         }
     }
 
     func removeSubview(at index: Int) {
-        if children[index].isFirstResponder || root.window?.firstResponder?.isDescendant(of: children[index]) == true {
+        let subviewToRemove = children[index]
+        if  subviewToRemove.isFirstResponder ||
+            root.window?.firstResponder?.isDescendant(of: subviewToRemove) == true
+        {
             root.window?.firstResponder?.resignFirstResponder()
-            root.window?.firstResponder = selectableElement(above: index) ?? selectableElement(below: index)
+            root.window?.firstResponder =
+                selectableElement(above: index) ??
+                selectableElement(below: index)
             root.window?.firstResponder?.becomeFirstResponder()
         }
-        children[index].window = nil
-        children[index].parent = nil
-        self.children.remove(at: index)
+
+        subviewToRemove.window = nil
+        subviewToRemove.parent = nil
+        children.remove(at: index)
         layer.removeLayer(at: index)
+
         for i in index ..< children.count {
             children[i].index = i
         }
@@ -84,6 +93,8 @@ class Control: LayerDrawing {
 
     // MARK: - Event handling
 
+    /// As the firstResponder, keyboard input is delivered to the focused control, which has an opportunity to handle it.
+    /// Subclasses can override to handle input in a custom way.
     func handle(key: Key) -> Bool {
         for subview in children {
             if subview.handle(key: key) {
@@ -106,7 +117,7 @@ class Control: LayerDrawing {
 
     var selectable: Bool { false }
 
-    final var firstSelectableElement: Control? {
+    var firstSelectableElement: Control? {
         if selectable { return self }
         for control in children {
             if let element = control.firstSelectableElement { return element }
@@ -127,4 +138,24 @@ class Control: LayerDrawing {
         parent?.scroll(to: position + layer.frame.position)
     }
 
+    private struct ResponderChainIterator: IteratorProtocol, Sequence {
+        var control: Control?
+
+        nonisolated mutating func next() -> Control? {
+            defer {
+                MainActor.assumeIsolated {
+                    control = control?.parent
+                }
+            }
+            return control
+        }
+
+        func makeIterator() -> Self {
+            self
+        }
+    }
+
+    var responderChain: some Sequence<Control> {
+        ResponderChainIterator(control: self)
+    }
 }

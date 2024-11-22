@@ -22,4 +22,16 @@ class Window: LayerDrawing {
     func cell(at position: Position) -> Cell? {
         Cell(char: " ")
     }
+
+    func handle(key: Key) -> Bool {
+        guard let firstResponder else { return false }
+
+        for control in firstResponder.responderChain {
+            if control.handle(key: key) {
+                return true
+            }
+        }
+
+        return false
+    }
 }

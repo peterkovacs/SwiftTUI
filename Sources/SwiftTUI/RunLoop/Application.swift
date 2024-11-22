@@ -109,7 +109,7 @@ public class Application {
 
         let keyInputTask = Task {
             for try await key in KeyParser() {
-                if window.firstResponder?.handle(key: key) == true {
+                if window.handle(key: key) {
                     continue
                 }
 
@@ -169,7 +169,7 @@ public class Application {
     func scheduleUpdate() {
         if !updateScheduled {
             updateScheduled = true
-            Task { self.update() }
+            Task { @MainActor in self.update() }
         }
     }
 
@@ -179,6 +179,11 @@ public class Application {
         for node in invalidatedNodes {
             node.update(using: node.view)
         }
+
+        if window.firstResponder?.firstSelectableElement !== window.firstResponder {
+            window.firstResponder?.resignFirstResponder()
+        }
+
         invalidatedNodes = []
         node.mergePreferences()
 

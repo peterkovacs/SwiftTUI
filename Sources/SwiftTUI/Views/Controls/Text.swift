@@ -48,7 +48,7 @@ public struct Text: View, PrimitiveView {
         control.layer.invalidate()
     }
     
-    private class TextControl: Control {
+    class TextControl: Control {
         var text: String?
         
         var attributedText: AttributedString?

@@ -1,10 +1,3 @@
-//
-//  TaskTests.swift
-//  SwiftTUI
-//
-//  Created by Peter Kovacs on 10/23/24.
-//
-
 import Testing
 @testable import SwiftTUI
 
