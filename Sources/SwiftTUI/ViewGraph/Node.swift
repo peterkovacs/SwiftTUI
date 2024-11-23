@@ -48,33 +48,14 @@ final class Node {
 
     private(set) var index: Int = 0
 
-    private(set) var built = false
-
-    init(node: GenericView) {
+    init(view: GenericView) {
         self.preference = [:]
         self.state = .init(node: self)
-        self.view = node
-//        withObservationTracking(observing) { [weak self] in
-//            guard let self else { return }
-//
-//            MainActor.assumeIsolated {
-//                // Here's the problem -- which node is it that we want to invalidate?
-//                // We need to search up the tree to see which node is the one that contains the @State or @Binding holding the Observable.
-//                // Or, we need to stop building nodes lazily, and instead build it on demand and set this callback in the `ComposedView`, but only if there are @State or @Binding attributes.
-//                (parent ?? self).invalidate()
-//            }
-//        }
+        self.view = view
+        view.buildNode(self)
     }
 
     func update(using observing: GenericView) {
-        build()
-
-//        let view = withObservationTracking(observing) { [weak self] in
-//            guard let self else { return }
-//            MainActor.assumeIsolated {
-//                (parent ?? self).invalidate()
-//            }
-//        }
         observing.updateNode(self)
         self.view = observing
     }
@@ -89,7 +70,6 @@ final class Node {
     /// The node does not need to be fully built for the size to be computed.
     var size: Int {
         if let size = type(of: view).size { return size }
-        build()
         return children.map(\.size).reduce(0, +)
     }
 
@@ -102,16 +82,6 @@ final class Node {
         return offset
     }
 
-    func build() {
-        if !built {
-            self.view.buildNode(self)
-            built = true
-            if let container = view as? LayoutRootView {
-                container.loadData(node: self)
-            }
-        }
-    }
-
     // MARK: - Changing nodes
 
     func addNode(at index: Int, _ node: Node) {
@@ -121,19 +91,22 @@ final class Node {
         for i in index ..< children.count {
             children[i].index = i
         }
-        if built {
-            for i in 0 ..< node.size {
-                insertControl(at: node.offset + i)
-            }
+
+        for i in 0 ..< node.size {
+            insertControl(at: node.offset + i)
         }
     }
 
+    func replaceNode(at index: Int, with node: Node) {
+        removeNode(at: index)
+        addNode(at: index, node)
+    }
+
     func removeNode(at index: Int) {
-        if built {
-            for i in (0 ..< children[index].size).reversed() {
-                removeControl(at: children[index].offset + i)
-            }
+        for i in (0 ..< children[index].size).reversed() {
+            removeControl(at: children[index].offset + i)
         }
+
         children[index].parent = nil
         children.remove(at: index)
         for i in index ..< children.count {
@@ -144,7 +117,6 @@ final class Node {
     // MARK: - Container data source
 
     func control(at offset: Int) -> Control {
-        build()
         if offset == 0, let control = self.control { return control }
         var i = 0
         for child in children {

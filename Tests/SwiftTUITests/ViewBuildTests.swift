@@ -1,9 +1,35 @@
-import XCTest
+import Testing
 @testable import SwiftTUI
 
 @MainActor
-final class ViewBuildTests: XCTestCase {
-    func test_VStack_TupleView2() throws {
+@Suite("ViewBuildTests")
+struct ViewBuildTests {
+    @Test func fromApplication() throws {
+        struct MyView: View {
+            var body: some View {
+                Text("Hello World")
+            }
+        }
+
+        let application = try drawView(MyView())
+        #expect(application.node.treeDescription ==
+            """
+            → ComposedView<RootView<MyView>>
+              → SetEnvironment<VStack<MyView>, @MainActor @Sendable () -> ()>
+                → VStack<MyView>
+                  → ComposedView<MyView>
+                    → Text
+            """)
+
+        #expect(application.control.treeDescription ==
+            """
+            → VStackControl
+              → TextControl
+            """)
+
+    }
+
+    @Test func VStack_TupleView2() throws {
         struct MyView: View {
             var body: some View {
                 VStack {
@@ -13,16 +39,18 @@ final class ViewBuildTests: XCTestCase {
             }
         }
 
-        let control = try buildView(MyView())
-
-        XCTAssertEqual(control.treeDescription, """
+        let node = Node(view: MyView().view)
+        #expect(
+            node.control(at: 0).treeDescription ==
+            """
             → VStackControl
               → TextControl
               → TextControl
-            """)
+            """
+        )
     }
 
-    func test_conditional_VStack() throws {
+    @Test func Conditional_VStack() throws {
         struct MyView: View {
             @State var value = true
 
@@ -31,22 +59,31 @@ final class ViewBuildTests: XCTestCase {
                     VStack {
                         Text("One")
                     }
+                } else {
+                    Text("Two")
                 }
             }
         }
 
-        let control = try buildView(MyView())
-
-        XCTAssertEqual(control.treeDescription, """
+        do {
+            let node = Node(view: MyView().view)
+            #expect(
+                node.control(at: 0).treeDescription ==
+            """
             → VStackControl
               → TextControl
-            """)
-    }
+            """
+            )
+        }
 
-    private func buildView<V: View>(_ view: V) throws -> Control {
-        let node = Node(observing: VStack(content: view).view)
-        node.build()
-        return try XCTUnwrap(node.control?.children.first)
+        do {
+            let node = Node(view: MyView(value: false).view)
+            #expect(
+                node.control(at: 0).treeDescription ==
+            """
+            → TextControl
+            """
+            )
+        }
     }
-
 }

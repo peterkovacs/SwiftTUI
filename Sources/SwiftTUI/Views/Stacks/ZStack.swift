@@ -17,15 +17,15 @@ public struct ZStack<Content: View>: View, PrimitiveView, LayoutRootView {
     
     static var size: Int? { 1 }
     
-    func loadData(node: Node) {
-        for i in 0 ..< node.children[0].size {
-            (node.control as! ZStackControl).addSubview(node.children[0].control(at: i), at: i)
-        }
-    }
-    
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(node: content.view))
-        node.control = ZStackControl(alignment: alignment)
+        let child = Node(view: content.view)
+        let control = ZStackControl(alignment: alignment)
+        node.control = control
+        node.addNode(at: 0, child)
+
+//        for i in 0 ..< child.size {
+//            control.addSubview(child.control(at: i), at: i)
+//        }
     }
     
     func updateNode(_ node: Node) {
@@ -34,15 +34,7 @@ public struct ZStack<Content: View>: View, PrimitiveView, LayoutRootView {
         let control = node.control as! ZStackControl
         control.alignment = alignment
     }
-    
-    func insertControl(at index: Int, node: Node) {
-        (node.control as! ZStackControl).addSubview(node.children[0].control(at: index), at: index)
-    }
-    
-    func removeControl(at index: Int, node: Node) {
-        (node.control as! ZStackControl).removeSubview(at: index)
-    }
-    
+
     private class ZStackControl: Control {
         var alignment: Alignment
         

@@ -8,14 +8,32 @@ struct ComposedView<I: View>: GenericView {
     func buildNode(_ node: Node) {
         view.setupStateProperties(node: node)
         view.setupEnvironmentProperties(node: node)
-        node.addNode(at: 0, Node(node: view.body.view))
+
+        let child = withObservationTracking {
+            Node(view: view.body.view)
+        } onChange: {
+            MainActor.assumeIsolated {
+                node.invalidate()
+            }
+        }
+
+        node.addNode(at: 0, child)
     }
     
     func updateNode(_ node: Node) {
         view.setupStateProperties(node: node)
         view.setupEnvironmentProperties(node: node)
         node.view = self
-        node.children[0].update(using: view.body.view)
+
+        let newView = withObservationTracking {
+            view.body.view
+        } onChange: {
+            MainActor.assumeIsolated {
+                node.invalidate()
+            }
+        }
+
+        node.children[0].update(using: newView)
     }
     
     static var size: Int? {

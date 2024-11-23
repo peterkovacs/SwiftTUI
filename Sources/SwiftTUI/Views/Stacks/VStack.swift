@@ -20,16 +20,16 @@ public struct VStack<Content: View>: View, PrimitiveView, LayoutRootView {
     
     static var size: Int? { 1 }
     
-    func loadData(node: Node) {
-        for i in 0 ..< node.children[0].size {
-            (node.control as! VStackControl).addSubview(node.children[0].control(at: i), at: i)
-        }
-    }
-    
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(node: content.view))
-        node.control = VStackControl(alignment: alignment, spacing: spacing ?? 0)
+        let child = Node(view: content.view)
+        let control = VStackControl(alignment: alignment, spacing: spacing ?? 0)
+        node.control = control
+        node.addNode(at: 0, child)
         node.environment = { $0.stackOrientation = .vertical }
+
+//        for i in 0 ..< child.size {
+//            control.addSubview(child.control(at: i), at: i)
+//        }
     }
     
     func updateNode(_ node: Node) {
@@ -39,15 +39,7 @@ public struct VStack<Content: View>: View, PrimitiveView, LayoutRootView {
         control.alignment = alignment
         control.spacing = spacing ?? 0
     }
-    
-    func insertControl(at index: Int, node: Node) {
-        (node.control as! VStackControl).addSubview(node.children[0].control(at: index), at: index)
-    }
-    
-    func removeControl(at index: Int, node: Node) {
-        (node.control as! VStackControl).removeSubview(at: index)
-    }
-    
+        
     private class VStackControl: Control {
         var alignment: HorizontalAlignment
         var spacing: Extended

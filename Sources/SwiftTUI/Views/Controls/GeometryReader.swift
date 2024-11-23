@@ -14,7 +14,7 @@ public struct GeometryReader<Content: View>: View, PrimitiveView {
 
     func buildNode(_ node: Node) {
         setupStateProperties(node: node)
-        node.addNode(at: 0, Node(node: VStack(content: content(geometry))))
+        node.addNode(at: 0, Node(view: VStack(content: content(geometry))))
         node.control = GeometryReaderControl(geometry: _geometry)
         node.control!.addSubview(node.children[0].control(at: 0), at: 0)
     }

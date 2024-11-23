@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "5FB09D99-2310-4640-BBC5-69A6E21309D1",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SwiftTUITests",
+        "name" : "SwiftTUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -14,15 +14,11 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
 
     static var size: Int? { 1 }
 
-    func loadData(node: Node) {
-        for i in 0 ..< node.children[0].size {
-            (node.control as! HStackControl).addSubview(node.children[0].control(at: i), at: i)
-        }
-    }
-
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(node: content.view))
-        node.control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
+        let child = Node(view: content.view)
+        let control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
+        node.control = control
+        node.addNode(at: 0, child)
         node.environment = { $0.stackOrientation = .horizontal }
     }
 
@@ -32,14 +28,6 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
         let control = node.control as! HStackControl
         control.alignment = alignment
         control.spacing = spacing ?? 1
-    }
-
-    func insertControl(at index: Int, node: Node) {
-        (node.control as! HStackControl).addSubview(node.children[0].control(at: index), at: index)
-    }
-
-    func removeControl(at index: Int, node: Node) {
-        (node.control as! HStackControl).removeSubview(at: index)
     }
 
     private class HStackControl: Control {

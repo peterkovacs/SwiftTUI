@@ -11,7 +11,7 @@ private struct TaskView<Content: View>: View, PrimitiveView, ModifierView {
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(node: content.view))
+        node.addNode(at: 0, Node(view: content.view))
     }
 
     func updateNode(_ node: Node) {

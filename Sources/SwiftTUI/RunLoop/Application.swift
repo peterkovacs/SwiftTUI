@@ -40,7 +40,7 @@ public class Application {
         self.exit = AsyncStream.makeStream()
 
         self.node = Node(
-            node: ComposedView(
+            view: ComposedView(
                 view: RootView(
                     rootView: rootView,
                     exit: { [continuation = exit.continuation] in
@@ -49,8 +49,6 @@ public class Application {
                 )
             )
         )
-
-        node.build()
 
         // Implicit top-level VStackControl
         control = node.control(at: 0)
