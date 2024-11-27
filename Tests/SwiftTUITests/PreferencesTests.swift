@@ -1,16 +1,8 @@
-//
-//  Preferences.swift
-//  SwiftTUI
-//
-//  Created by Peter Kovacs on 10/28/24.
-//
-
 import Testing
 @testable import SwiftTUI
 
-@Suite("Preferences")
 @MainActor
-struct PreferencesTests {
+@Suite("Preferences") struct PreferencesTests {
     @Test func testMergesPreferences() async throws {
         struct Key: PreferenceKey {
             static var defaultValue: Int = 0

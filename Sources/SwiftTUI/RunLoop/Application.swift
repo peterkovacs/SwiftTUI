@@ -16,11 +16,6 @@ public class Application {
     private var invalidatedNodes: [Node] = []
     private var updateScheduled = false
 
-    private var exit: (
-        stream: AsyncStream<Void>,
-        continuation: AsyncStream<Void>.Continuation
-    )
-
     public convenience init<I: View>(
         rootView: @escaping @autoclosure () -> I
     ) {
@@ -33,13 +28,10 @@ public class Application {
 
     struct RootView<T: View>: View {
         let rootView: () -> T
-        let exit: @Sendable () -> Void
-
         var body: some View {
             VStack {
                 rootView()
             }
-            .environment(\.exit, exit)
         }
     }
 
@@ -48,17 +40,8 @@ public class Application {
         renderer: Renderer,
         parser: KeyParser
     ) {
-        self.exit = AsyncStream.makeStream()
-
-
         self.node = Node(
-            view: ComposedView(
-                view: RootView(
-                    rootView: rootView
-                ) { [continuation = exit.continuation] in
-                    continuation.finish()
-                }
-            ),
+            view: VStack { rootView() },
             parent: nil
         )
 
@@ -145,16 +128,16 @@ public class Application {
                         becomeResponder(next)
                     }
                 case Key(.char("d"), modifiers: .ctrl):
-                    exit.continuation.finish()
+                    Exit.exit()
                 default:
                     break
                 }
             }
 
-            exit.continuation.finish()
+            Exit.exit()
         }
 
-        for try await _ in exit.stream {
+        for try await _ in Exit.stream {
             break
         }
 
@@ -188,6 +171,11 @@ public class Application {
             node.update(using: node.view)
         }
 
+        // TODO: Deal with the fact that a firstResponder (or its chain) may become unfocusable.
+//        if window.firstResponder?.isFocusable == false {
+//            window.firstResponder?.resignFirstResponder()
+//            window.firstResponder = nil
+//        }
 
         invalidatedNodes = []
         node.mergePreferences()

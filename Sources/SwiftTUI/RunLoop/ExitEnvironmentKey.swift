@@ -1,12 +1,12 @@
-//
-//  Environment.swift
-//  SwiftTUI
-//
-//  Created by Peter Kovacs on 9/26/24.
-//
 
-private struct ExitEnvironmentKey: EnvironmentKey {
-    static var defaultValue: @MainActor () -> Void = {}
+enum Exit {
+    static let (stream, continuation): (AsyncStream<Void>, AsyncStream<Void>.Continuation) = {
+        AsyncStream.makeStream()
+    }()
+
+    static func exit() {
+        continuation.yield()
+    }
 }
 
 extension EnvironmentValues {
@@ -14,5 +14,11 @@ extension EnvironmentValues {
     public var exit: @MainActor () -> Void {
         get { self[ExitEnvironmentKey.self] }
         set { self[ExitEnvironmentKey.self] = newValue }
+    }
+
+    private struct ExitEnvironmentKey: EnvironmentKey {
+        static var defaultValue: @MainActor () -> Void = {
+            Exit.continuation.yield()
+        }
     }
 }

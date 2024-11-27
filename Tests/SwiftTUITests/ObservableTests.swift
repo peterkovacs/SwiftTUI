@@ -1,17 +1,9 @@
-//
-//  ObservableTests.swift
-//  SwiftTUI
-//
-//  Created by Peter Kovacs on 10/29/24.
-//
-
 import Testing
 import Observation
 @testable import SwiftTUI
 
-@Suite("Observable")
 @MainActor
-struct ObservableTests {
+@Suite("Observable") struct ObservableTests {
     @Observable class Model {
         var count: Int = 0
 

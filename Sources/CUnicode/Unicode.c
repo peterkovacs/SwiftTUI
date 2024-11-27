@@ -1,10 +1,3 @@
-//
-//  Unicode.c
-//  SwiftTUI
-//
-//  Created by Peter Kovacs on 9/30/24.
-//
-
 #include "Unicode.h"
 
 typedef struct {
