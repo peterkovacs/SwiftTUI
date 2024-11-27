@@ -1,8 +1,7 @@
 import Foundation
 
-class Window: LayerDrawing {
+public class Window: LayerDrawing {
     private(set) lazy var layer: Layer = makeLayer()
-
     private(set) var controls: [Control] = []
 
     var firstResponder: Control?

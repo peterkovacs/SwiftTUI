@@ -16,9 +16,9 @@ public struct _ConditionalView<TrueContent: View, FalseContent: View>: View, Pri
     func buildNode(_ node: Node) {
         switch content {
         case .a(let value):
-            node.addNode(at: 0, Node(view: value.view))
+            node.addNode(at: 0, Node(view: value.view, parent: node))
         case .b(let value):
-            node.addNode(at: 0, Node(view: value.view))
+            node.addNode(at: 0, Node(view: value.view, parent: node))
         }
     }
 
@@ -31,10 +31,10 @@ public struct _ConditionalView<TrueContent: View, FalseContent: View>: View, Pri
         case (.b, .b(let newValue)):
             node.children[0].update(using: newValue.view)
         case (.b, .a(let newValue)):
-            let child = Node(view: newValue.view)
+            let child = Node(view: newValue.view, parent: node)
             node.replaceNode(at: 0, with: child)
         case (.a, .b(let newValue)):
-            let child = Node(view: newValue.view)
+            let child = Node(view: newValue.view, parent: node)
             node.replaceNode(at: 0, with: child)
         }
     }

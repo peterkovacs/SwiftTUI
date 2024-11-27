@@ -36,7 +36,7 @@ struct PreferencesTests {
             }
         }
 
-        let application = try drawView(PreferenceView())
+        let (application, _) = try drawView(PreferenceView())
         #expect(application.node.preference.count == 1)
         #expect(Array(application.node.preference.values).first?.1.value as? Int == 3)
     }
@@ -67,7 +67,7 @@ struct PreferencesTests {
             }
         }
 
-        let application = try drawView(PreferenceView())
+        let (application, _) = try drawView(PreferenceView())
         #expect(application.node.preference.count == 1)
         #expect(Array(application.node.preference.values).first?.1.value as? Int == 11)
     }
@@ -96,7 +96,7 @@ struct PreferencesTests {
             }
         }
 
-        let application = try drawView(PreferenceView {
+        let (application, _) = try drawView(PreferenceView {
             value.append($0)
         })
 

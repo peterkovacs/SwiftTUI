@@ -25,8 +25,9 @@ private struct FlexibleFrame<Content: View>: View, PrimitiveView, ModifierView {
     static var size: Int? { Content.size }
     
     func buildNode(_ node: Node) {
+        let child = Node(view: content.view, parent: node)
         node.controls = WeakSet<Control>()
-        node.addNode(at: 0, Node(view: content.view))
+        node.addNode(at: 0, child)
     }
     
     func updateNode(_ node: Node) {

@@ -11,7 +11,7 @@ struct ViewBuildTests {
             }
         }
 
-        let application = try drawView(MyView())
+        let (application, _) = try drawView(MyView())
         #expect(application.node.treeDescription ==
             """
             → ComposedView<RootView<MyView>>
@@ -39,7 +39,7 @@ struct ViewBuildTests {
             }
         }
 
-        let node = Node(view: MyView().view)
+        let node = Node(view: MyView().view, parent: nil)
         #expect(
             node.control(at: 0).treeDescription ==
             """
@@ -66,7 +66,7 @@ struct ViewBuildTests {
         }
 
         do {
-            let node = Node(view: MyView().view)
+            let node = Node(view: MyView().view, parent: nil)
             #expect(
                 node.control(at: 0).treeDescription ==
             """
@@ -77,7 +77,7 @@ struct ViewBuildTests {
         }
 
         do {
-            let node = Node(view: MyView(value: false).view)
+            let node = Node(view: MyView(value: false).view, parent: nil)
             #expect(
                 node.control(at: 0).treeDescription ==
             """

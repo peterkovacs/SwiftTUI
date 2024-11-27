@@ -3,24 +3,13 @@ import Foundation
 import AppKit
 #endif
 
-struct RootView<T: View>: View {
-    let rootView: () -> T
-    let exit: @Sendable () -> Void
-
-    var body: some View {
-        VStack {
-            rootView()
-        }
-        .environment(\.exit, exit)
-    }
-}
-
 @MainActor
 public class Application {
     let node: Node
-    let window: Window
     let control: Control
-    let renderer: Renderer
+    let parser: KeyParser
+    var renderer: Renderer
+    var window: Window { renderer.window }
 
     private var arrowKeyParser = KeyParser()
 
@@ -32,39 +21,59 @@ public class Application {
         continuation: AsyncStream<Void>.Continuation
     )
 
+    public convenience init<I: View>(
+        rootView: @escaping @autoclosure () -> I
+    ) {
+        self.init(
+            rootView: rootView(),
+            renderer: TerminalRenderer(fileHandle: .standardOutput),
+            parser: KeyParser(fileHandle: .standardInput)
+        )
+    }
 
-    public init<I: View>(
+    struct RootView<T: View>: View {
+        let rootView: () -> T
+        let exit: @Sendable () -> Void
+
+        var body: some View {
+            VStack {
+                rootView()
+            }
+            .environment(\.exit, exit)
+        }
+    }
+
+    init<I: View>(
         rootView: @escaping @autoclosure () -> I,
-        fileHandle: FileHandle = .standardOutput
+        renderer: Renderer,
+        parser: KeyParser
     ) {
         self.exit = AsyncStream.makeStream()
+
 
         self.node = Node(
             view: ComposedView(
                 view: RootView(
-                    rootView: rootView,
-                    exit: { [continuation = exit.continuation] in
-                        continuation.finish()
-                    }
-                )
-            )
+                    rootView: rootView
+                ) { [continuation = exit.continuation] in
+                    continuation.finish()
+                }
+            ),
+            parent: nil
         )
 
-        // Implicit top-level VStackControl
-        control = node.control(at: 0)
-        node.mergePreferences()
+        // control(at: 0) is the implicit top-level VStackControl created in RootView
+        self.control = node.control(at: 0)
+        self.node.mergePreferences()
 
-        window = Window()
-        window.addControl(control)
+        self.parser = parser
+        self.renderer = renderer
+        self.renderer.window.addControl(self.control)
+        self.renderer.window.firstResponder = self.control.firstSelectableElement
+        self.renderer.window.firstResponder?.becomeFirstResponder()
 
-        window.firstResponder = control.firstSelectableElement
-        window.firstResponder?.becomeFirstResponder()
-
-        renderer = Renderer(layer: window.layer, fileHandle: fileHandle)
-        window.layer.renderer = renderer
-
-        node.application = self
-        renderer.application = self
+        self.node.application = self
+        self.renderer.application = self
     }
 
     private var sigwinch: AsyncStream<Void> {
@@ -79,7 +88,7 @@ public class Application {
                     continuation.yield()
                 }
             )
-            signal.activate()
+            signal.activate() 
         }
 
         stream.continuation.onTermination = { _ in
@@ -90,10 +99,9 @@ public class Application {
     }
 
     func setup() {
-        updateWindowSize()
         node.mergePreferences()
         control.layout(size: window.layer.frame.size)
-        renderer.draw()
+        renderer.draw(rect: nil)
     }
 
     public func start() async throws {
@@ -106,7 +114,7 @@ public class Application {
         }
 
         let keyInputTask = Task {
-            for try await key in KeyParser() {
+            for try await key in parser {
                 if window.handle(key: key) {
                     continue
                 }
@@ -142,6 +150,8 @@ public class Application {
                     break
                 }
             }
+
+            exit.continuation.finish()
         }
 
         for try await _ in exit.stream {
@@ -178,9 +188,6 @@ public class Application {
             node.update(using: node.view)
         }
 
-        if window.firstResponder?.firstSelectableElement !== window.firstResponder {
-            window.firstResponder?.resignFirstResponder()
-        }
 
         invalidatedNodes = []
         node.mergePreferences()
@@ -191,22 +198,9 @@ public class Application {
 
     private func handleWindowSizeChange() {
         MainActor.assumeIsolated {
-            updateWindowSize()
+            renderer.setSize()
             control.layer.invalidate()
             update()
         }
-    }
-
-    func updateWindowSize() {
-        var size = winsize()
-        guard ioctl(
-            renderer.fileHandle.fileDescriptor, UInt(TIOCGWINSZ), &size
-        ) == 0,
-              size.ws_col > 0, size.ws_row > 0 else {
-            assertionFailure("Could not get window size")
-            return
-        }
-        window.layer.frame.size = Size(width: Extended(Int(size.ws_col)), height: Extended(Int(size.ws_row)))
-        renderer.setCache()
     }
 }

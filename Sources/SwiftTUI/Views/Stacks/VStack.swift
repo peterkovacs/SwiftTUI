@@ -21,15 +21,11 @@ public struct VStack<Content: View>: View, PrimitiveView, LayoutRootView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        let child = Node(view: content.view)
+        node.environment = { $0.stackOrientation = .vertical }
+        let child = Node(view: content.view, parent: node)
         let control = VStackControl(alignment: alignment, spacing: spacing ?? 0)
         node.control = control
         node.addNode(at: 0, child)
-        node.environment = { $0.stackOrientation = .vertical }
-
-//        for i in 0 ..< child.size {
-//            control.addSubview(child.control(at: i), at: i)
-//        }
     }
     
     func updateNode(_ node: Node) {

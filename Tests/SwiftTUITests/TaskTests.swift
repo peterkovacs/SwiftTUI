@@ -54,7 +54,7 @@ struct TaskTests {
 
         var called = false
 
-        let node = try drawView(
+        let (node, _) = try drawView(
             MyView {
                 called = true
             }

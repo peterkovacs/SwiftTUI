@@ -48,7 +48,8 @@ final class Node {
 
     private(set) var index: Int = 0
 
-    init(view: GenericView) {
+    init(view: GenericView, parent: Node?) {
+        self.parent = parent
         self.preference = [:]
         self.state = .init(node: self)
         self.view = view
@@ -85,9 +86,8 @@ final class Node {
     // MARK: - Changing nodes
 
     func addNode(at index: Int, _ node: Node) {
-        guard node.parent == nil else { fatalError("Node is already in tree") }
         children.insert(node, at: index)
-        node.parent = self
+
         for i in index ..< children.count {
             children[i].index = i
         }
@@ -117,20 +117,35 @@ final class Node {
     // MARK: - Container data source
 
     func control(at offset: Int) -> Control {
+        // If looking for control 0 and we have a control, then we're at the right place.
         if offset == 0, let control = self.control { return control }
+
         var i = 0
         for child in children {
             let size = child.size
+
+            // if offset - i is within this child, then we're in the right place.
             if (offset - i) < size {
+
+                // Recurse: Find the (offset - i)th control in the child node.
                 let control = child.control(at: offset - i)
+
+                // Here we've got the correct child control.
+                // If this node represents a modifier view, then we want to build a
+                // control that contains the child control and return that.
                 if let modifier = self.view as? ModifierView {
                     return modifier.passControl(control, node: self)
                 }
+
+                // Otherwise, we return the child control directly.
                 return control
             }
+
+            // Skip over this child's controls, incrementing by its size.
             i += size
         }
-        fatalError("Out of bounds")
+
+        fatalError("Out of bounds: A child reported a size that does not match the number of controls it contains.")
     }
 
     // MARK: - Container changes

@@ -96,11 +96,6 @@ class Control: LayerDrawing {
     /// As the firstResponder, keyboard input is delivered to the focused control, which has an opportunity to handle it.
     /// Subclasses can override to handle input in a custom way.
     func handle(key: Key) -> Bool {
-        for subview in children {
-            if subview.handle(key: key) {
-                return true
-            }
-        }
 
         return false
     }

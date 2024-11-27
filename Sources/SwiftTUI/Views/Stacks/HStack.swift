@@ -15,11 +15,11 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
     static var size: Int? { 1 }
 
     func buildNode(_ node: Node) {
-        let child = Node(view: content.view)
+        node.environment = { $0.stackOrientation = .horizontal }
+        let child = Node(view: content.view, parent: node)
         let control = HStackControl(alignment: alignment, spacing: spacing ?? 1)
         node.control = control
         node.addNode(at: 0, child)
-        node.environment = { $0.stackOrientation = .horizontal }
     }
 
     func updateNode(_ node: Node) {
@@ -30,7 +30,7 @@ public struct HStack<Content: View>: View, PrimitiveView, LayoutRootView {
         control.spacing = spacing ?? 1
     }
 
-    private class HStackControl: Control {
+    class HStackControl: Control {
         var alignment: VerticalAlignment
         var spacing: Extended
 

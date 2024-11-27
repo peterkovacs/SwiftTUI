@@ -7,4 +7,6 @@ public struct Size: Equatable, CustomStringConvertible {
     public static var zero: Size { Size(width: 0, height: 0) }
 
     public var description: String { "\(width)x\(height)" }
+
+    var isZero: Bool { width.intValue == 0 && height.intValue == 0 }
 }

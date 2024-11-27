@@ -14,7 +14,8 @@ private struct Background<Content: View>: View, PrimitiveView, ModifierView {
 
     func buildNode(_ node: Node) {
         node.controls = WeakSet<Control>()
-        node.addNode(at: 0, Node(view: content.view))
+        let child = Node(view: content.view, parent: node)
+        node.addNode(at: 0, child)
     }
 
     func updateNode(_ node: Node) {

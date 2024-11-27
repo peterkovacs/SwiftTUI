@@ -23,7 +23,7 @@ private struct Padding<Content: View>: View, PrimitiveView, ModifierView {
     
     func buildNode(_ node: Node) {
         node.controls = WeakSet<Control>()
-        node.addNode(at: 0, Node(view: content.view))
+        node.addNode(at: 0, Node(view: content.view, parent: node))
     }
     
     func updateNode(_ node: Node) {

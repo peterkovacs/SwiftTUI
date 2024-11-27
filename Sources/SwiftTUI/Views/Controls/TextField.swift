@@ -22,6 +22,7 @@ public struct TextField: View, PrimitiveView {
     func buildNode(_ node: Node) {
         setupEnvironmentProperties(node: node)
         node.control = TextFieldControl(
+            text: text,
             placeholder: placeholder ?? "",
             placeholderColor: placeholderColor,
             action: onSubmit
@@ -38,15 +39,16 @@ public struct TextField: View, PrimitiveView {
         control.placeholderColor = placeholderColor
     }
 
-    private class TextFieldControl: Control {
+    class TextFieldControl: Control {
+        @Binding var text: String
         var placeholder: String
         var placeholderColor: Color
         var action: (String) -> Void
 
         var cursorPosition: String.Index
-        var text: String
 
         init(
+            text: Binding<String>,
             placeholder: String,
             placeholderColor: Color,
             action: @escaping (String) -> Void
@@ -54,8 +56,8 @@ public struct TextField: View, PrimitiveView {
             self.placeholder = placeholder
             self.placeholderColor = placeholderColor
             self.action = action
-            self.text = String()
-            self.cursorPosition = text.endIndex
+            self._text = text
+            self.cursorPosition = text.wrappedValue.endIndex
         }
 
         override func size(proposedSize: Size) -> Size {
@@ -95,6 +97,10 @@ public struct TextField: View, PrimitiveView {
 
 
         override func handle(key: Key) -> Bool {
+            if !text.indices.contains(cursorPosition) {
+                cursorPosition = text.endIndex
+            }
+
             switch(key) {
             case Key(.tab), Key(.tab, modifiers: .shift):
                 return false

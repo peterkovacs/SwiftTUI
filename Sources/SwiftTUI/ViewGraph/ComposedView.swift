@@ -10,7 +10,7 @@ struct ComposedView<I: View>: GenericView {
         view.setupEnvironmentProperties(node: node)
 
         let child = withObservationTracking {
-            Node(view: view.body.view)
+            Node(view: view.body.view, parent: node)
         } onChange: {
             MainActor.assumeIsolated {
                 node.invalidate()

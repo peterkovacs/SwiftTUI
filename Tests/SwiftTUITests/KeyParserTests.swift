@@ -51,12 +51,11 @@ struct KeyParserTests {
         ]
     )
     func parsesEscapeSequences(input: String, expectation: Key) async throws {
-        let pipe = Pipe()
-        let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
+        let (parser, fileHandle) = KeyParser.pipe()
         var iterator = parser.makeAsyncIterator()
 
         Task {
-            try pipe.fileHandleForWriting.write(
+            try fileHandle.write(
                 contentsOf: input.data(using: .utf8)!
             )
         }
@@ -66,16 +65,15 @@ struct KeyParserTests {
     }
 
     @Test func parsesEscape() async throws {
-        let pipe = Pipe()
-        let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
+        let (parser, fileHandle) = KeyParser.pipe()
         var iterator = parser.makeAsyncIterator()
 
         Task {
-            try pipe.fileHandleForWriting.write(
+            try fileHandle.write(
                 contentsOf: "\u{1b}".data(using: .utf8)!
             )
             try await Task.sleep(for: .milliseconds(100))
-            try pipe.fileHandleForWriting.write(
+            try fileHandle.write(
                 contentsOf: "[".data(using: .utf8)!
             )
 
@@ -94,12 +92,11 @@ struct KeyParserTests {
     }
 
     @Test func parsesUnicode() async throws {
-        let pipe = Pipe()
-        let parser = KeyParser(fileHandle: pipe.fileHandleForReading)
+        let (parser, fileHandle) = KeyParser.pipe()
         var iterator = parser.makeAsyncIterator()
 
         Task {
-            try pipe.fileHandleForWriting.write(
+            try fileHandle.write(
                 contentsOf: "\u{1f468}".data(using: .utf8)!
             )
         }

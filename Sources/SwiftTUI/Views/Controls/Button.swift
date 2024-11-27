@@ -20,10 +20,13 @@ public struct Button<Label: View>: View, PrimitiveView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(view: label.view))
+        let child = Node(view: label.view, parent: node)
         let control = ButtonControl(action: action, hover: hover)
-        control.label = node.children[0].control(at: 0)
+
+        control.label = child.control(at: 0)
         control.addSubview(control.label, at: 0)
+
+        node.addNode(at: 0, child)
         node.control = control
     }
     
@@ -32,12 +35,12 @@ public struct Button<Label: View>: View, PrimitiveView {
         node.children[0].update(using: label.view)
     }
     
-    private class ButtonControl: Control {
+    class ButtonControl: Control {
         var action: @Sendable @MainActor () -> Void
         var hover: @Sendable @MainActor () -> Void
         var label: Control!
-        weak var buttonLayer: ButtonLayer?
-        
+        private weak var buttonLayer: ButtonLayer?
+
         init(action: @escaping @MainActor () -> Void, hover: @escaping @MainActor () -> Void) {
             self.action = action
             self.hover = hover

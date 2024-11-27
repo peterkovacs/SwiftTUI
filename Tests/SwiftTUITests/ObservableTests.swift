@@ -36,7 +36,7 @@ struct ObservableTests {
         }
 
 
-        let app = try drawView(MyView(model: Model()))
+        let (app, _) = try drawView(MyView(model: Model()))
 
         #expect(app.node.treeDescription ==  """
             → ComposedView<RootView<MyView>>
@@ -103,7 +103,7 @@ struct ObservableTests {
             }
         }
 
-        let app = try drawView(MyView(model: Model()))
+        let (app, _) = try drawView(MyView(model: Model()))
 
         #expect(app.node.extractText() == ["This is some text.", "Count: 1", "This is some text.", "Count: 2"])
         try await Task.sleep(for: .milliseconds(250))

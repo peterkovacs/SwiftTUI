@@ -126,9 +126,22 @@ public struct Key: Sendable, Equatable {
         default: break
         }
     }
+
+    func bytes() -> [UInt8] {
+        switch (key, modifiers) {
+        case (.char(let s), []):
+            return Array(s.utf8)
+        default:
+            guard let key = KeyParser.mapping.first(where: { $0.value == self })?.key
+            else { return [] }
+
+            return Array(key.utf8)
+        }
+    }
 }
 
-public actor KeyParser: AsyncSequence {
+/// Parse bytes from the fileHandle into `Key`s.
+actor KeyParser: AsyncSequence {
     enum State {
         case initial
         case escapeSequence(String, Task<Void, Error>)
@@ -264,7 +277,7 @@ public actor KeyParser: AsyncSequence {
         return stream.stream
     }
 
-    nonisolated static private let mapping: [String: Key] = [
+    nonisolated static let mapping: [String: Key] = [
         // //    Arrow keys
         "\u{1b}[A":    Key(.up),
         "\u{1b}[B":    Key(.down),

@@ -18,14 +18,10 @@ public struct ZStack<Content: View>: View, PrimitiveView, LayoutRootView {
     static var size: Int? { 1 }
     
     func buildNode(_ node: Node) {
-        let child = Node(view: content.view)
+        let child = Node(view: content.view, parent: node)
         let control = ZStackControl(alignment: alignment)
         node.control = control
         node.addNode(at: 0, child)
-
-//        for i in 0 ..< child.size {
-//            control.addSubview(child.control(at: i), at: i)
-//        }
     }
     
     func updateNode(_ node: Node) {

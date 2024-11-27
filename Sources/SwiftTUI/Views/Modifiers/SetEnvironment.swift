@@ -20,8 +20,10 @@ private struct SetEnvironment<Content: View, T>: View, PrimitiveView {
     static var size: Int? { Content.size }
 
     func buildNode(_ node: Node) {
-        node.addNode(at: 0, Node(view: content.view))
         node.environment = { $0[keyPath: keyPath] = value }
+
+        let child = Node(view: content.view, parent: node)
+        node.addNode(at: 0, child)
     }
 
     func updateNode(_ node: Node) {
